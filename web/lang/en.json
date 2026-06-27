@@ -1,0 +1,59 @@
+{
+  "home": {
+    "page_title": "Comfy Cabinet - Home",
+    "title": "🗄️ Comfy Cabinet",
+    "subtitle": "Your collection of custom tools and configurations",
+    "tool_title": "Easy Checkpoint Config",
+    "tool_desc": "Manage presets for your favorite models. Configure steps, CFG, samplers, and fixed prompts (prefixes/suffixes).",
+    "tool_button": "Open Tool"
+  },
+  "easy_config": {
+    "page_title": "Easy Checkpoint Config",
+    "nav_cabinet": "🗄️ Cabinet",
+    "title": "🎨 Easy Checkpoint Config",
+    "nav_settings": "⚙️ Settings",
+    "select_model_label": "Select checkpoint",
+    "select_checkpoint_placeholder": "Choose a checkpoint...",
+    "search_checkpoint_placeholder": "Search checkpoint...",
+    "total_steps_label": "Total steps",
+    "cfg_scale_label": "CFG Scale",
+    "sampler_name_label": "Sampler Name",
+    "select_sampler_placeholder": "Select sampler...",
+    "search_sampler_placeholder": "Search sampler...",
+    "scheduler_label": "Scheduler",
+    "select_scheduler_placeholder": "Select scheduler...",
+    "search_scheduler_placeholder": "Search scheduler...",
+    "prompt_prefix_label": "Prompt Prefix",
+    "prefix_placeholder": "masterpiece...",
+    "prompt_suffix_label": "Prompt Suffix",
+    "suffix_placeholder": "highly detailed...",
+    "save_model_settings_btn": "Save model settings"
+  },
+  "settings": {
+    "page_title": "General Settings - Easy Checkpoint Config",
+    "nav_config": "⬅️ Config",
+    "title": "⚙️ General Settings",
+    "base_values_subtitle": "Default values (checkpoints not yet configured)",
+    "default_steps_label": "Default steps",
+    "default_cfg_label": "Default CFG",
+    "default_sampler_label": "Default sampler",
+    "select_sampler_placeholder": "Select...",
+    "search_placeholder": "Search...",
+    "default_scheduler_label": "Default scheduler",
+    "select_scheduler_placeholder": "Select...",
+    "text_structure_subtitle": "Text Structure",
+    "prompt_separator_label": "Prompt Separator (e.g.: \" , \" or \" \\n \" for newline)",
+    "prompt_separator_placeholder": ", ",
+    "save_general_settings_btn": "Save general settings"
+  },
+  "dropdown": {
+    "no_results": "No matches"
+  },
+  "status": {
+    "preset_loaded": "Model preset loaded!",
+    "save_success": "Settings saved successfully! ✅",
+    "save_error": "Error saving settings ❌",
+    "global_save_success": "General settings updated! ✅",
+    "global_save_error": "Error saving settings ❌"
+  }
+}

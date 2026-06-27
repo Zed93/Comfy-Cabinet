@@ -1,0 +1,59 @@
+{
+  "home": {
+    "page_title": "Comfy Cabinet - Home",
+    "title": "🗄️ Comfy Cabinet",
+    "subtitle": "La tua collezione di strumenti e configurazioni personalizzate",
+    "tool_title": "Easy Checkpoint Config",
+    "tool_desc": "Gestisci i preset dei tuoi modelli preferiti. Configura steps, CFG, sampler, scheduler e prompt fissi (prefissi/suffissi).",
+    "tool_button": "Apri Strumento"
+  },
+  "easy_config": {
+    "page_title": "Easy Checkpoint Config",
+    "nav_cabinet": "🗄️ Cabinet",
+    "title": "🎨 Easy Checkpoint Config",
+    "nav_settings": "⚙️ Impostazioni",
+    "select_model_label": "Seleziona modello (checkpoint)",
+    "select_checkpoint_placeholder": "Scegli un checkpoint...",
+    "search_checkpoint_placeholder": "Cerca checkpoint...",
+    "total_steps_label": "Steps totali",
+    "cfg_scale_label": "CFG Scale",
+    "sampler_name_label": "Sampler name",
+    "select_sampler_placeholder": "Seleziona sampler...",
+    "search_sampler_placeholder": "Cerca sampler...",
+    "scheduler_label": "Scheduler",
+    "select_scheduler_placeholder": "Seleziona scheduler...",
+    "search_scheduler_placeholder": "Cerca scheduler...",
+    "prompt_prefix_label": "Prefisso Prompt",
+    "prefix_placeholder": "masterpiece...",
+    "prompt_suffix_label": "Suffisso Prompt",
+    "suffix_placeholder": "highly detailed...",
+    "save_model_settings_btn": "Salva impostazioni modello"
+  },
+  "settings": {
+    "page_title": "Impostazioni Generali - Easy Checkpoint Config",
+    "nav_config": "⬅️ Config",
+    "title": "⚙️ Impostazioni Generali",
+    "base_values_subtitle": "Valori Base (checkpoint non ancora configurati)",
+    "default_steps_label": "Default Steps",
+    "default_cfg_label": "Default CFG",
+    "default_sampler_label": "Default sampler",
+    "select_sampler_placeholder": "Seleziona...",
+    "search_placeholder": "Cerca...",
+    "default_scheduler_label": "Default scheduler",
+    "select_scheduler_placeholder": "Seleziona...",
+    "text_structure_subtitle": "Struttura del Testo",
+    "prompt_separator_label": "Separatore di Prompt (es: \" , \" oppure \" \\n \" per andare a capo)",
+    "prompt_separator_placeholder": ", ",
+    "save_general_settings_btn": "Salva impostazioni generali"
+  },
+  "dropdown": {
+    "no_results": "Nessun abbinamento"
+  },
+  "status": {
+    "preset_loaded": "Preset modello caricato!",
+    "save_success": "Impostazioni salvate con successo! ✅",
+    "save_error": "Errore nel salvataggio ❌",
+    "global_save_success": "Impostazioni generali aggiornate! ✅",
+    "global_save_error": "Errore nel salvataggio ❌"
+  }
+}

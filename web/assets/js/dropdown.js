@@ -8,7 +8,8 @@ function createDropdownComponent(triggerId, panelId, searchId, listId, dataList,
         itemsList.innerHTML = "";
         const filtered = dataList.filter(item => item.toLowerCase().includes(filterText.toLowerCase()));
         if (filtered.length === 0) {
-            itemsList.innerHTML = '<div class="dropdown-item no-results">Nessun abbinamento</div>';
+            const noResultsText = (window.i18n && window.i18n.t) ? window.i18n.t("dropdown.no_results") : "Nessun abbinamento";
+            itemsList.innerHTML = `<div class="dropdown-item no-results">${noResultsText}</div>`;
             return;
         }
         filtered.forEach(item => {

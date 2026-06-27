@@ -1,29 +1,30 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Easy Checkpoint Config</title>
+    <title data-i18n="easy_config.page_title">Easy Checkpoint Config</title>
     <link rel="icon" type="image/x-icon" href="../../favicon.ico">
     <link rel="stylesheet" href="../../assets/css/style.css">
+    <script src="../../assets/js/i18n.js" data-lang-path="../../lang/"></script>
     <script src="../../assets/js/dropdown.js"></script>
     <script src="../../assets/js/easy-checkpoint-config/data_loader.js"></script>
 </head>
 <body>
     <div class="container">
         <header class="tool-header">
-            <a href="../../index.html" class="btn-nav nav-left">🗄️ Cabinet</a>
-            <h1>🎨 Easy Checkpoint Config</h1>
-            <a href="settings.html" class="btn-nav nav-right">⚙️ Impostazioni</a>
+            <a href="../../index.html" class="btn-nav nav-left" data-i18n="easy_config.nav_cabinet">🗄️ Cabinet</a>
+            <h1 data-i18n="easy_config.title">🎨 Easy Checkpoint Config</h1>
+            <a href="settings.html" class="btn-nav nav-right" data-i18n="easy_config.nav_settings">⚙️ Settings</a>
         </header>
 
         <div class="card">
             <div class="form-group">
-                <label>Seleziona Modello (Checkpoint)</label>
+                <label data-i18n="easy_config.select_model_label">Select checkpoint</label>
                 <div class="select-box-container">
-                    <div class="select-trigger" id="checkpointTrigger">Scegli un checkpoint...</div>
+                    <div class="select-trigger" id="checkpointTrigger" data-i18n="easy_config.select_checkpoint_placeholder">Choose a checkpoint...</div>
                     <div class="dropdown-panel" id="checkpointPanel">
-                        <div class="dropdown-search-wrapper"><input type="text" id="checkpointSearch" placeholder="Cerca checkpoint..."></div>
+                        <div class="dropdown-search-wrapper"><input type="text" id="checkpointSearch" placeholder="Search checkpoint..." data-i18n-placeholder="easy_config.search_checkpoint_placeholder"></div>
                         <div class="dropdown-items-list" id="checkpointList"></div>
                     </div>
                 </div>
@@ -31,36 +32,36 @@
             <hr>
             <div id="settingsForm" class="disabled-form">
                 <div class="grid-2">
-                    <div class="form-group"><label>Steps Totali</label><input type="number" id="steps" min="1"></div>
-                    <div class="form-group"><label>CFG Scale</label><input type="number" id="cfg" step="0.5"></div>
+                    <div class="form-group"><label data-i18n="easy_config.total_steps_label">Total steps</label><input type="number" id="steps" min="1"></div>
+                    <div class="form-group"><label data-i18n="easy_config.cfg_scale_label">CFG Scale</label><input type="number" id="cfg" step="0.5"></div>
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label>Sampler Name</label>
+                        <label data-i18n="easy_config.sampler_name_label">Sampler Name</label>
                         <div class="select-box-container">
-                            <div class="select-trigger" id="samplerTrigger">Seleziona Sampler...</div>
+                            <div class="select-trigger" id="samplerTrigger" data-i18n="easy_config.select_sampler_placeholder">Select sampler...</div>
                             <div class="dropdown-panel" id="samplerPanel">
-                                <div class="dropdown-search-wrapper"><input type="text" id="samplerSearch" placeholder="Cerca sampler..."></div>
+                                <div class="dropdown-search-wrapper"><input type="text" id="samplerSearch" placeholder="Search sampler..." data-i18n-placeholder="easy_config.search_sampler_placeholder"></div>
                                 <div class="dropdown-items-list" id="samplerList"></div>
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Scheduler</label>
+                        <label data-i18n="easy_config.scheduler_label">Scheduler</label>
                         <div class="select-box-container">
-                            <div class="select-trigger" id="schedulerTrigger">Seleziona Scheduler...</div>
+                            <div class="select-trigger" id="schedulerTrigger" data-i18n="easy_config.select_scheduler_placeholder">Select scheduler...</div>
                             <div class="dropdown-panel" id="schedulerPanel">
-                                <div class="dropdown-search-wrapper"><input type="text" id="schedulerSearch" placeholder="Cerca scheduler..."></div>
+                                <div class="dropdown-search-wrapper"><input type="text" id="schedulerSearch" placeholder="Search scheduler..." data-i18n-placeholder="easy_config.search_scheduler_placeholder"></div>
                                 <div class="dropdown-items-list" id="schedulerList"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="form-group"><label>Prefisso Prompt</label><textarea id="prefixPrompt" placeholder="masterpiece..."></textarea></div>
-                <div class="form-group"><label>Suffisso Prompt</label><textarea id="suffixPrompt" placeholder="highly detailed..."></textarea></div>
+                <div class="form-group"><label data-i18n="easy_config.prompt_prefix_label">Prompt Prefix</label><textarea id="prefixPrompt" placeholder="masterpiece..." data-i18n-placeholder="easy_config.prefix_placeholder"></textarea></div>
+                <div class="form-group"><label data-i18n="easy_config.prompt_suffix_label">Prompt Suffix</label><textarea id="suffixPrompt" placeholder="highly detailed..." data-i18n-placeholder="easy_config.suffix_placeholder"></textarea></div>
                 <div class="footer-actions">
                     <span id="modelStatus" class="status-msg"></span>
-                    <button id="saveModelBtn" class="btn-save">Salva impostazioni modello</button>
+                    <button id="saveModelBtn" class="btn-save" data-i18n="easy_config.save_model_settings_btn">Save model settings</button>
                 </div>
             </div>
         </div>

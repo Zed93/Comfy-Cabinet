@@ -9,21 +9,29 @@ function autoResizeTextarea(el) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    settingsForm = document.getElementById('settingsForm');
-    fields = {
-        steps: document.getElementById('steps'), cfg: document.getElementById('cfg'),
-        prefix_prompt: document.getElementById('prefixPrompt'), suffix_prompt: document.getElementById('suffixPrompt')
+    const initLoader = () => {
+        settingsForm = document.getElementById('settingsForm');
+        fields = {
+            steps: document.getElementById('steps'), cfg: document.getElementById('cfg'),
+            prefix_prompt: document.getElementById('prefixPrompt'), suffix_prompt: document.getElementById('suffixPrompt')
+        };
+
+        ['prefixPrompt', 'suffixPrompt'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', function() { autoResizeTextarea(this); });
+        });
+
+        const saveBtn = document.getElementById('saveModelBtn');
+        if (saveBtn) saveBtn.addEventListener('click', saveModelSettings);
+
+        loadResources();
     };
 
-    ['prefixPrompt', 'suffixPrompt'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', function() { autoResizeTextarea(this); });
-    });
-
-    const saveBtn = document.getElementById('saveModelBtn');
-    if (saveBtn) saveBtn.addEventListener('click', saveModelSettings);
-
-    loadResources();
+    if (window.i18n && window.i18n.ready) {
+        initLoader();
+    } else {
+        document.addEventListener("i18n-ready", initLoader);
+    }
 });
 
 async function loadResources() {
@@ -52,7 +60,8 @@ async function loadCheckpointSettings(checkpointName) {
         
         autoResizeTextarea(fields.prefix_prompt); autoResizeTextarea(fields.suffix_prompt);
         if (settingsForm) settingsForm.classList.remove('disabled-form');
-        showStatus("modelStatus", "Preset modello caricato!", "var(--accent)");
+        const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.preset_loaded") : "Preset modello caricato!";
+        showStatus("modelStatus", msg, "var(--accent)");
     } catch (err) { console.error(err); }
 }
 
@@ -65,8 +74,14 @@ async function saveModelSettings() {
     };
     try {
         const r = await fetch('/smart_config/save_settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (r.ok) showStatus("modelStatus", "Impostazioni salvate con successo! ✅", "var(--success)");
-    } catch (err) { showStatus("modelStatus", "Errore nel salvataggio ❌", "var(--error)"); }
+        if (r.ok) {
+            const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.save_success") : "Impostazioni salvate con successo! ✅";
+            showStatus("modelStatus", msg, "var(--success)");
+        }
+    } catch (err) {
+        const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.save_error") : "Errore nel salvataggio ❌";
+        showStatus("modelStatus", msg, "var(--error)");
+    }
 }
 
 function showStatus(id, msg, color) {

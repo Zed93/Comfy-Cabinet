@@ -3,15 +3,23 @@ const currentSelection = { gSampler: "", gScheduler: "" };
 let fields;
 
 document.addEventListener("DOMContentLoaded", () => {
-    fields = {
-        gSteps: document.getElementById('globalSteps'), gCfg: document.getElementById('globalCfg'),
-        separator: document.getElementById('promptSeparator')
+    const initSettings = () => {
+        fields = {
+            gSteps: document.getElementById('globalSteps'), gCfg: document.getElementById('globalCfg'),
+            separator: document.getElementById('promptSeparator')
+        };
+
+        const saveGlobalBtn = document.getElementById('saveGlobalBtn');
+        if (saveGlobalBtn) saveGlobalBtn.addEventListener('click', saveGlobalSettings);
+
+        loadGlobalResources();
     };
 
-    const saveGlobalBtn = document.getElementById('saveGlobalBtn');
-    if (saveGlobalBtn) saveGlobalBtn.addEventListener('click', saveGlobalSettings);
-
-    loadGlobalResources();
+    if (window.i18n && window.i18n.ready) {
+        initSettings();
+    } else {
+        document.addEventListener("i18n-ready", initSettings);
+    }
 });
 
 async function loadGlobalResources() {
@@ -43,9 +51,18 @@ async function saveGlobalSettings() {
         if (r.ok) {
             const el = document.getElementById("globalStatus");
             if (el) {
-                el.textContent = "Impostazioni generali aggiornate! ✅"; el.style.color = "var(--success)";
+                const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.global_save_success") : "Impostazioni generali aggiornate! ✅";
+                el.textContent = msg; el.style.color = "var(--success)";
                 setTimeout(() => el.textContent = "", 4000);
             }
         }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+        console.error(err);
+        const el = document.getElementById("globalStatus");
+        if (el) {
+            const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.global_save_error") : "Errore nel salvataggio ❌";
+            el.textContent = msg; el.style.color = "var(--error)";
+            setTimeout(() => el.textContent = "", 4000);
+        }
+    }
 }

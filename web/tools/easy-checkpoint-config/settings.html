@@ -1,58 +1,59 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impostazioni Generali - Easy Checkpoint Config</title>
+    <title data-i18n="settings.page_title">General Settings - Easy Checkpoint Config</title>
     <link rel="icon" type="image/x-icon" href="../../favicon.ico">
     <link rel="stylesheet" href="../../assets/css/style.css">
+    <script src="../../assets/js/i18n.js" data-lang-path="../../lang/"></script>
     <script src="../../assets/js/dropdown.js"></script>
     <script src="../../assets/js/easy-checkpoint-config/settings_manager.js"></script>
 </head>
 <body>
     <div class="container">
         <header class="tool-header">
-            <a href="index.html" class="btn-nav nav-left">⬅️ Config</a>
-            <h1>⚙️ Impostazioni Generali</h1>
+            <a href="index.html" class="btn-nav nav-left" data-i18n="settings.nav_config">⬅️ Config</a>
+            <h1 data-i18n="settings.title">⚙️ General Settings</h1>
         </header>
 
         <div class="card">
-            <h2 style="font-size: 1.1rem; margin-bottom: 20px; color: #a5b4fc;">Valori Base (Modelli non ancora configurati)</h2>
+            <h2 style="font-size: 1.1rem; margin-bottom: 20px; color: #a5b4fc;" data-i18n="settings.base_values_subtitle">Default values (checkpoints not yet configured)</h2>
             <div class="grid-2">
-                <div class="form-group"><label>Default Steps</label><input type="number" id="globalSteps"></div>
-                <div class="form-group"><label>Default CFG</label><input type="number" id="globalCfg" step="0.5"></div>
+                <div class="form-group"><label data-i18n="settings.default_steps_label">Default steps</label><input type="number" id="globalSteps"></div>
+                <div class="form-group"><label data-i18n="settings.default_cfg_label">Default CFG</label><input type="number" id="globalCfg" step="0.5"></div>
             </div>
             <div class="grid-2">
                 <div class="form-group">
-                    <label>Default Sampler</label>
+                    <label data-i18n="settings.default_sampler_label">Default sampler</label>
                     <div class="select-box-container">
-                        <div class="select-trigger" id="gSamplerTrigger">Seleziona...</div>
+                        <div class="select-trigger" id="gSamplerTrigger" data-i18n="settings.select_sampler_placeholder">Select...</div>
                         <div class="dropdown-panel" id="gSamplerPanel">
-                            <div class="dropdown-search-wrapper"><input type="text" id="gSamplerSearch" placeholder="Cerca..."></div>
+                            <div class="dropdown-search-wrapper"><input type="text" id="gSamplerSearch" placeholder="Search..." data-i18n-placeholder="settings.search_placeholder"></div>
                             <div class="dropdown-items-list" id="gSamplerList"></div>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Default Scheduler</label>
+                    <label data-i18n="settings.default_scheduler_label">Default scheduler</label>
                     <div class="select-box-container">
-                        <div class="select-trigger" id="gSchedulerTrigger">Seleziona...</div>
+                        <div class="select-trigger" id="gSchedulerTrigger" data-i18n="settings.select_scheduler_placeholder">Select...</div>
                         <div class="dropdown-panel" id="gSchedulerPanel">
-                            <div class="dropdown-search-wrapper"><input type="text" id="gSchedulerSearch" placeholder="Cerca..."></div>
+                            <div class="dropdown-search-wrapper"><input type="text" id="gSchedulerSearch" placeholder="Search..." data-i18n-placeholder="settings.search_placeholder"></div>
                             <div class="dropdown-items-list" id="gSchedulerList"></div>
                         </div>
                     </div>
                 </div>
             </div>
             <hr>
-            <h2 style="font-size: 1.1rem; margin-bottom: 12px; color: #a5b4fc;">Struttura del Testo</h2>
+            <h2 style="font-size: 1.1rem; margin-bottom: 12px; color: #a5b4fc;" data-i18n="settings.text_structure_subtitle">Text Structure</h2>
             <div class="form-group">
-                <label>Separatore di Prompt (es: " , " oppure " \n " per andare a capo)</label>
-                <input type="text" id="promptSeparator" placeholder=", " style="font-family: monospace; letter-spacing: 2px;">
+                <label data-i18n="settings.prompt_separator_label">Prompt Separator (e.g.: " , " or " \n " for newline)</label>
+                <input type="text" id="promptSeparator" placeholder=", " style="font-family: monospace; letter-spacing: 2px;" data-i18n-placeholder="settings.prompt_separator_placeholder">
             </div>
             <div class="footer-actions">
                 <span id="globalStatus" class="status-msg"></span>
-                <button id="saveGlobalBtn" class="btn-save">Salva impostazioni generali</button>
+                <button id="saveGlobalBtn" class="btn-save" data-i18n="settings.save_general_settings_btn">Save general settings</button>
             </div>
         </div>
     </div>
