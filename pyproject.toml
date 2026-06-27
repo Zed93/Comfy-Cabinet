@@ -16,5 +16,6 @@ Repository = "https://github.com/Zed93/Comfy-Cabinet"
 [tool.comfy]
 PublisherId = "zed93"
 DisplayName = "Comfy Cabinet"
-Icon = "🗄️"
+Icon = "https://raw.githubusercontent.com/Zed93/Comfy-Cabinet/main/web/assets/images/icon.png"
+Banner = "https://raw.githubusercontent.com/Zed93/Comfy-Cabinet/main/web/assets/images/banner.png"
 requires-comfyui = ">=0.2.4"
