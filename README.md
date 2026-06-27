@@ -41,7 +41,7 @@ The **Easy Checkpoint Config** is like having a very polite, highly organized bu
 Simply clone this repository into your ComfyUI custom nodes folder:
 ```bash
 cd ComfyUI/custom_nodes
-git clone [https://github.com/Zed93/Comfy-Cabinet.git](https://github.com/Zed93/Comfy-Cabinet.git)
+git clone https://github.com/Zed93/Comfy-Cabinet.git
 ```
 
 ---
