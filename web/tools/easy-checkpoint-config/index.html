@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Checkpoint Config</title>
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <script src="../../assets/js/dropdown.js"></script>
+    <script src="../../assets/js/easy-checkpoint-config/data_loader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="tool-header">
+            <a href="../../index.html" class="btn-nav nav-left">🗄️ Cabinet</a>
+            <h1>🎨 Easy Checkpoint Config</h1>
+            <a href="settings.html" class="btn-nav nav-right">⚙️ Impostazioni</a>
+        </header>
+
+        <div class="card">
+            <div class="form-group">
+                <label>Seleziona Modello (Checkpoint)</label>
+                <div class="select-box-container">
+                    <div class="select-trigger" id="checkpointTrigger">Scegli un checkpoint...</div>
+                    <div class="dropdown-panel" id="checkpointPanel">
+                        <div class="dropdown-search-wrapper"><input type="text" id="checkpointSearch" placeholder="Cerca checkpoint..."></div>
+                        <div class="dropdown-items-list" id="checkpointList"></div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div id="settingsForm" class="disabled-form">
+                <div class="grid-2">
+                    <div class="form-group"><label>Steps Totali</label><input type="number" id="steps" min="1"></div>
+                    <div class="form-group"><label>CFG Scale</label><input type="number" id="cfg" step="0.5"></div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Sampler Name</label>
+                        <div class="select-box-container">
+                            <div class="select-trigger" id="samplerTrigger">Seleziona Sampler...</div>
+                            <div class="dropdown-panel" id="samplerPanel">
+                                <div class="dropdown-search-wrapper"><input type="text" id="samplerSearch" placeholder="Cerca sampler..."></div>
+                                <div class="dropdown-items-list" id="samplerList"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Scheduler</label>
+                        <div class="select-box-container">
+                            <div class="select-trigger" id="schedulerTrigger">Seleziona Scheduler...</div>
+                            <div class="dropdown-panel" id="schedulerPanel">
+                                <div class="dropdown-search-wrapper"><input type="text" id="schedulerSearch" placeholder="Cerca scheduler..."></div>
+                                <div class="dropdown-items-list" id="schedulerList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group"><label>Prefisso Prompt</label><textarea id="prefixPrompt" placeholder="masterpiece..."></textarea></div>
+                <div class="form-group"><label>Suffisso Prompt</label><textarea id="suffixPrompt" placeholder="highly detailed..."></textarea></div>
+                <div class="footer-actions">
+                    <span id="modelStatus" class="status-msg"></span>
+                    <button id="saveModelBtn" class="btn-save">Salva impostazioni modello</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
