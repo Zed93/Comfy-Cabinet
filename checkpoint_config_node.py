@@ -140,6 +140,11 @@ class EasyCheckpointConfigLoader:
     FUNCTION = "process"
     CATEGORY = "🗄️ Comfy Cabinet"
 
+    @classmethod
+    def IS_CHANGED(s, checkpoint, user_prompt):
+        import time
+        return time.time()
+
     def process(self, checkpoint, user_prompt):
         import nodes
         model, clip, vae = nodes.CheckpointLoaderSimple().load_checkpoint(checkpoint)
