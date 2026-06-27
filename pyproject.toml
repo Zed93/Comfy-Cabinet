@@ -10,7 +10,11 @@ authors = [
 ]
 dependencies = []
 
+[project.urls]
+Repository = "https://github.com/Zed93/Comfy-Cabinet"
+
 [tool.comfy]
 PublisherId = "zed93"
 DisplayName = "Comfy Cabinet"
 Icon = "🗄️"
+requires-comfyui = ">=0.2.4"
