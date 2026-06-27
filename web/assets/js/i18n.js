@@ -49,17 +49,33 @@
             }
         }
     `;
-    document.head.appendChild(style);
+
+    try {
+        const head = document.head || document.getElementsByTagName('head')[0];
+        if (head) {
+            head.appendChild(style);
+        } else {
+            document.documentElement.appendChild(style);
+        }
+    } catch (e) {
+        console.error("Failed to append styles:", e);
+    }
 
     // Get configuration
     const currentScript = document.currentScript;
     const langPath = currentScript ? currentScript.getAttribute('data-lang-path') : 'lang/';
 
     // Detect language
-    let lang = localStorage.getItem('comfy-cabinet-lang');
-    if (!lang) {
-        const browserLang = (navigator.language || navigator.userLanguage || 'en').substring(0, 2).toLowerCase();
-        lang = browserLang === 'it' ? 'it' : 'en';
+    let lang = 'en';
+    try {
+        lang = localStorage.getItem('comfy-cabinet-lang');
+        if (!lang) {
+            const browserLang = (navigator.language || navigator.userLanguage || 'en').substring(0, 2).toLowerCase();
+            lang = browserLang === 'it' ? 'it' : 'en';
+        }
+    } catch (e) {
+        console.warn("Failed to access localStorage, defaulting to 'en':", e);
+        lang = 'en';
     }
 
     let translations = {};
@@ -68,6 +84,7 @@
         lang: lang,
         ready: false,
         t: function (key, defaultValue = "") {
+            if (!key || typeof key !== 'string') return defaultValue || "";
             const keys = key.split('.');
             let current = translations;
             for (const k of keys) {
@@ -90,18 +107,31 @@
                 console.error(`Failed to load translation for lang: ${lang}`);
             }
         } catch (e) {
-            console.error(e);
+            console.error("Failed to fetch translation:", e);
         } finally {
-            // Apply translations to DOM
-            applyTranslations();
-            // Inject language selector
-            injectLanguageSelector();
-            // Mark ready
+            // ALWAYS remove loading class first to prevent blank page if script crashes
+            try {
+                document.documentElement.classList.remove('i18n-loading');
+            } catch (e) {
+                console.error(e);
+            }
+
+            try {
+                // Apply translations to DOM
+                applyTranslations();
+                // Inject language selector
+                injectLanguageSelector();
+            } catch (e) {
+                console.error("Error applying translations:", e);
+            }
+
+            // Mark ready and dispatch event
             window.i18n.ready = true;
-            // Remove loading class
-            document.documentElement.classList.remove('i18n-loading');
-            // Dispatch event for other scripts
-            document.dispatchEvent(new CustomEvent('i18n-ready'));
+            try {
+                document.dispatchEvent(new CustomEvent('i18n-ready'));
+            } catch (e) {
+                console.error(e);
+            }
         }
     }
 
@@ -111,28 +141,40 @@
 
         // Translate textContent
         document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            const trans = window.i18n.t(key);
-            if (trans && trans !== key) {
-                el.textContent = trans;
+            try {
+                const key = el.getAttribute('data-i18n');
+                const trans = window.i18n.t(key);
+                if (trans && trans !== key) {
+                    el.textContent = trans;
+                }
+            } catch (e) {
+                console.error("Error translating element:", el, e);
             }
         });
 
         // Translate placeholders
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            const trans = window.i18n.t(key);
-            if (trans && trans !== key) {
-                el.placeholder = trans;
+            try {
+                const key = el.getAttribute('data-i18n-placeholder');
+                const trans = window.i18n.t(key);
+                if (trans && trans !== key) {
+                    el.placeholder = trans;
+                }
+            } catch (e) {
+                console.error("Error translating placeholder:", el, e);
             }
         });
 
         // Translate titles
         document.querySelectorAll('[data-i18n-title]').forEach(el => {
-            const key = el.getAttribute('data-i18n-title');
-            const trans = window.i18n.t(key);
-            if (trans && trans !== key) {
-                el.title = trans;
+            try {
+                const key = el.getAttribute('data-i18n-title');
+                const trans = window.i18n.t(key);
+                if (trans && trans !== key) {
+                    el.title = trans;
+                }
+            } catch (e) {
+                console.error("Error translating title:", el, e);
             }
         });
     }
@@ -157,15 +199,20 @@
         selector.appendChild(btnEn);
         selector.appendChild(btnIt);
 
-        // Append to container if it exists, otherwise to body
-        const container = document.querySelector('.container') || document.body;
-        // Let's append to body directly so fixed position works well relative to viewport
-        document.body.appendChild(selector);
+        // Append to container if it exists, otherwise to body, otherwise to document element
+        const container = document.querySelector('.container') || document.body || document.documentElement;
+        if (container) {
+            container.appendChild(selector);
+        }
     }
 
     function setLanguage(newLang) {
         if (newLang === lang) return;
-        localStorage.setItem('comfy-cabinet-lang', newLang);
+        try {
+            localStorage.setItem('comfy-cabinet-lang', newLang);
+        } catch (e) {
+            console.warn("Failed to save language choice in localStorage:", e);
+        }
         window.location.reload();
     }
 

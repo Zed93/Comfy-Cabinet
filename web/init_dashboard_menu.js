@@ -36,8 +36,20 @@ if (comfyApp) {
                     btn.style.fontWeight = "bold";
 
                     btn.innerHTML = `<span style="font-size: 14px;">🗄️ Easy Config</span>`;
+                    const getBasePath = () => {
+                        try {
+                            const url = new URL(import.meta.url);
+                            const parts = url.pathname.split('/');
+                            parts.pop();
+                            return parts.join('/') + '/';
+                        } catch (err) {
+                            return "/extensions/Comfy-Cabinet/";
+                        }
+                    };
+
                     btn.addEventListener("click", () => {
-                        window.open(`${window.location.origin}/extensions/comfy-cabinet/index.html`, "_blank");
+                        const basePath = getBasePath();
+                        window.open(`${window.location.origin}${basePath}index.html`, "_blank");
                     });
 
                     buttonGroup.appendChild(btn);
