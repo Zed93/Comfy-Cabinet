@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
         settingsForm = document.getElementById('settingsForm');
         fields = {
             steps: document.getElementById('steps'), cfg: document.getElementById('cfg'),
+            clip_skip: document.getElementById('clip_skip'),
             prefix_prompt: document.getElementById('prefixPrompt'), suffix_prompt: document.getElementById('suffixPrompt')
         };
 
@@ -52,7 +53,7 @@ async function loadCheckpointSettings(checkpointName) {
         const response = await fetch(`/smart_config/get_settings?checkpoint=${encodeURIComponent(checkpointName)}`);
         const config = await response.json();
         
-        fields.steps.value = config.steps; fields.cfg.value = config.cfg;
+        fields.steps.value = config.steps; fields.cfg.value = config.cfg; fields.clip_skip.value = config.clip_skip;
         fields.prefix_prompt.value = config.prefix_prompt; fields.suffix_prompt.value = config.suffix_prompt;
         
         document.getElementById("samplerTrigger").textContent = config.sampler_name; currentSelection.sampler_name = config.sampler_name;
@@ -68,7 +69,7 @@ async function loadCheckpointSettings(checkpointName) {
 async function saveModelSettings() {
     if (!currentSelection.checkpoint) return;
     const payload = {
-        checkpoint: currentSelection.checkpoint, steps: fields.steps.value, cfg: fields.cfg.value,
+        checkpoint: currentSelection.checkpoint, steps: fields.steps.value, cfg: fields.cfg.value, clip_skip: fields.clip_skip.value,
         sampler_name: currentSelection.sampler_name, scheduler: currentSelection.scheduler,
         prefix_prompt: fields.prefix_prompt.value, suffix_prompt: fields.suffix_prompt.value
     };

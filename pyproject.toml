@@ -1,6 +1,6 @@
 [project]
 name = "comfy-cabinet"
-version = "0.1.2"
+version = "0.1.3"
 description = "A ComfyUI custom node pack to manage checkpoint presets (steps, CFG, samplers, schedulers, and prompt prefixes/suffixes)."
 readme = "README.md"
 requires-python = ">=3.9"

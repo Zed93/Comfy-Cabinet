@@ -61,6 +61,8 @@ input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px
 
 .grid-2 { display: grid; grid-template-columns: 1fr; gap: 20px; }
 @media (min-width: 768px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+.grid-3 { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 768px) { .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
 textarea { resize: none; overflow-y: hidden; min-height: 58px; }
 .disabled-form { opacity: 0.3; pointer-events: none; }
 .footer-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); }

@@ -19,15 +19,21 @@ def init_db():
             sampler_name TEXT,
             scheduler TEXT,
             prefix_prompt TEXT,
-            suffix_prompt TEXT
+            suffix_prompt TEXT,
+            clip_skip INTEGER
         )
     """)
+    try:
+        cursor.execute("ALTER TABLE checkpoint_settings ADD COLUMN clip_skip INTEGER")
+    except sqlite3.OperationalError:
+        pass
     cursor.execute("CREATE TABLE IF NOT EXISTS global_settings (key TEXT PRIMARY KEY, value TEXT)")
     defaults = [
         ("default_steps", "20"),
         ("default_cfg", "7.0"),
         ("default_sampler", "euler"),
         ("default_scheduler", "normal"),
+        ("default_clip_skip", "-1"),
         ("prompt_separator", ", ")
     ]
     for key, val in defaults:
@@ -49,9 +55,18 @@ def get_settings(checkpoint_name):
     globals_dict = get_global_settings()
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT steps, cfg, sampler_name, scheduler, prefix_prompt, suffix_prompt FROM checkpoint_settings WHERE checkpoint_name = ?", (checkpoint_name,))
-    row = cursor.fetchone()
+    
+    try:
+        cursor.execute("SELECT steps, cfg, sampler_name, scheduler, prefix_prompt, suffix_prompt, clip_skip FROM checkpoint_settings WHERE checkpoint_name = ?", (checkpoint_name,))
+        row = cursor.fetchone()
+    except sqlite3.OperationalError:
+        cursor.execute("SELECT steps, cfg, sampler_name, scheduler, prefix_prompt, suffix_prompt FROM checkpoint_settings WHERE checkpoint_name = ?", (checkpoint_name,))
+        row = cursor.fetchone()
+        if row: row = tuple(list(row) + [-1])
+        
     conn.close()
+    
+    default_clip_skip = int(globals_dict.get("default_clip_skip", -1))
     
     if row:
         return {
@@ -60,7 +75,8 @@ def get_settings(checkpoint_name):
             "sampler_name": row[2] if row[2] else globals_dict["default_sampler"],
             "scheduler": row[3] if row[3] else globals_dict["default_scheduler"],
             "prefix_prompt": row[4] if row[4] else "",
-            "suffix_prompt": row[5] if row[5] else ""
+            "suffix_prompt": row[5] if row[5] else "",
+            "clip_skip": row[6] if (len(row) > 6 and row[6] is not None) else default_clip_skip
         }
     return {
         "steps": int(globals_dict["default_steps"]),
@@ -68,7 +84,8 @@ def get_settings(checkpoint_name):
         "sampler_name": globals_dict["default_sampler"],
         "scheduler": globals_dict["default_scheduler"],
         "prefix_prompt": "",
-        "suffix_prompt": ""
+        "suffix_prompt": "",
+        "clip_skip": default_clip_skip
     }
 
 # ==================== API ENDPOINTS ====================
@@ -96,13 +113,14 @@ async def api_save_settings(request):
         checkpoint = data.get("checkpoint")
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        clip_skip_val = int(data.get('clip_skip', -1))
         cursor.execute("""
-            INSERT INTO checkpoint_settings (checkpoint_name, steps, cfg, sampler_name, scheduler, prefix_prompt, suffix_prompt)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO checkpoint_settings (checkpoint_name, steps, cfg, sampler_name, scheduler, prefix_prompt, suffix_prompt, clip_skip)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(checkpoint_name) DO UPDATE SET
                 steps=excluded.steps, cfg=excluded.cfg, sampler_name=excluded.sampler_name,
-                scheduler=excluded.scheduler, prefix_prompt=excluded.prefix_prompt, suffix_prompt=excluded.suffix_prompt
-        """, (checkpoint, int(data['steps']), float(data['cfg']), data['sampler_name'], data['scheduler'], data['prefix_prompt'], data['suffix_prompt']))
+                scheduler=excluded.scheduler, prefix_prompt=excluded.prefix_prompt, suffix_prompt=excluded.suffix_prompt, clip_skip=excluded.clip_skip
+        """, (checkpoint, int(data['steps']), float(data['cfg']), data['sampler_name'], data['scheduler'], data['prefix_prompt'], data['suffix_prompt'], clip_skip_val))
         conn.commit()
         conn.close()
         return web.json_response({"status": "saved"})
@@ -151,6 +169,11 @@ class EasyCheckpointConfigLoader:
         settings = get_settings(checkpoint)
         global_configs = get_global_settings()
         
+        clip_skip = settings.get("clip_skip", -1)
+        if clip_skip < -1:
+            clip = clip.clone()
+            clip.clip_layer(clip_skip)
+            
         separator = global_configs.get("prompt_separator", ", ").replace("\\n", "\n").replace("\\t", "\t")
 
         prompt_segments = []

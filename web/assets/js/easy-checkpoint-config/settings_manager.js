@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const initSettings = () => {
         fields = {
             gSteps: document.getElementById('globalSteps'), gCfg: document.getElementById('globalCfg'),
+            gClipSkip: document.getElementById('globalClipSkip'),
             separator: document.getElementById('promptSeparator')
         };
 
@@ -33,6 +34,7 @@ async function loadGlobalResources() {
 
         fields.gSteps.value = data.global_configs.default_steps;
         fields.gCfg.value = data.global_configs.default_cfg;
+        fields.gClipSkip.value = data.global_configs.default_clip_skip || -1;
         fields.separator.value = data.global_configs.prompt_separator;
         
         document.getElementById("gSamplerTrigger").textContent = data.global_configs.default_sampler; currentSelection.gSampler = data.global_configs.default_sampler;
@@ -42,7 +44,7 @@ async function loadGlobalResources() {
 
 async function saveGlobalSettings() {
     const payload = {
-        default_steps: fields.gSteps.value, default_cfg: fields.gCfg.value,
+        default_steps: fields.gSteps.value, default_cfg: fields.gCfg.value, default_clip_skip: fields.gClipSkip.value,
         default_sampler: currentSelection.gSampler, default_scheduler: currentSelection.gScheduler,
         prompt_separator: fields.separator.value
     };
