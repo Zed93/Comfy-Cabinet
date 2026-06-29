@@ -1,4 +1,10 @@
 (function () {
+    // Check if loaded by ComfyUI's extension loader (which won't set data-lang-path)
+    const currentScript = document.currentScript;
+    if (!currentScript || !currentScript.hasAttribute('data-lang-path')) {
+        return;
+    }
+
     // Add loading class immediately
     document.documentElement.classList.add('i18n-loading');
     const style = document.createElement('style');
@@ -62,8 +68,7 @@
     }
 
     // Get configuration
-    const currentScript = document.currentScript;
-    const langPath = currentScript ? currentScript.getAttribute('data-lang-path') : 'lang/';
+    const langPath = currentScript.getAttribute('data-lang-path');
 
     // Detect language
     let lang = 'en';
