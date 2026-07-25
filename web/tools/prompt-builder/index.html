@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="prompt_builder.page_title">Easy Prompt Builder - Comfy Cabinet</title>
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="../../assets/css/prompt_builder.css">
+    <script src="../../assets/js/i18n.js" data-lang-path="../../lang/"></script>
+    <script src="../../assets/js/prompt-builder/builder.js" defer></script>
+</head>
+
+<body>
+    <div class="container prompt-builder-container">
+        <header class="tool-header">
+            <a href="../../index.html" class="btn-nav nav-left" data-i18n="prompt_builder.nav_cabinet">🗄️ Cabinet</a>
+            <h1 data-i18n="prompt_builder.title">🧩 Easy Prompt Builder</h1>
+        </header>
+
+        <!-- Top Bar: Scene Preset & Separator -->
+        <div class="top-bar-card">
+            <div class="scene-preset-group">
+                <label style="margin:0; white-space:nowrap;" data-i18n="prompt_builder.scene_preset_label">Full Scene
+                    Preset</label>
+                <select id="scenePresetSelect">
+                    <option value="" data-i18n="prompt_builder.select_scene_placeholder">Choose scene preset...</option>
+                </select>
+                <button id="btnSaveScene" class="btn-small btn-accent" data-i18n="prompt_builder.save_scene_btn">💾 Save
+                    Scene</button>
+                <button id="btnDeleteScene" class="btn-small btn-danger" data-i18n="prompt_builder.delete_scene_btn">🗑️
+                    Delete Scene</button>
+            </div>
+            <div class="separator-group">
+                <label style="margin:0;" data-i18n="prompt_builder.prompt_separator_label">Separator</label>
+                <select id="separatorSelect">
+                    <option value=", ">, (Comma & Space)</option>
+                    <option value="\n">↵ (Newline)</option>
+                    <option value=" | ">| (Pipe)</option>
+                    <option value=" BREAK ">BREAK (Space &amp; BREAK &amp; Space)</option>
+                    <option value=" ">Space</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 8 Modular Prompt Block Cards -->
+        <div class="blocks-grid">
+
+            <!-- 1. PREFIX -->
+            <div class="block-card" data-category="prefix">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>🏷️</span>
+                        <span data-i18n="prompt_builder.block_prefix">Prefix</span>
+                        <span class="block-tag-badge badge-prefix">PREFIX</span>
+                    </div>
+                    <select class="block-select-preset" data-category="prefix">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="prefix"
+                    placeholder="masterpiece, best quality, ultra detailed..."
+                    data-i18n-placeholder="prompt_builder.placeholder_prefix"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="prefix"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="prefix"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="prefix"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- 2. CHARACTER -->
+            <div class="block-card" data-category="character">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>👤</span>
+                        <span data-i18n="prompt_builder.block_character">Character</span>
+                        <span class="block-tag-badge badge-character">CHARACTER</span>
+                    </div>
+                    <select class="block-select-preset" data-category="character">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="character"
+                    placeholder="1girl, solo, elf warrior, blue eyes..."
+                    data-i18n-placeholder="prompt_builder.placeholder_character"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="character"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="character"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="character"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- 3. CLOTHING -->
+            <div class="block-card" data-category="clothing">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>👗</span>
+                        <span data-i18n="prompt_builder.block_clothing">Clothing</span>
+                        <span class="block-tag-badge badge-clothing">CLOTHING</span>
+                    </div>
+                    <select class="block-select-preset" data-category="clothing">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="clothing"
+                    placeholder="ornate armor, dark leather cloak..."
+                    data-i18n-placeholder="prompt_builder.placeholder_clothing"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="clothing"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="clothing"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="clothing"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- 4. EXPRESSION -->
+            <div class="block-card" data-category="expression">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>🎭</span>
+                        <span data-i18n="prompt_builder.block_expression">Expression</span>
+                        <span class="block-tag-badge badge-expression">EXPRESSION</span>
+                    </div>
+                    <select class="block-select-preset" data-category="expression">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="expression"
+                    placeholder="smile, blushing, looking at viewer, gentle grin..."
+                    data-i18n-placeholder="prompt_builder.placeholder_expression"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="expression"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="expression"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="expression"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- 5. SITUATION -->
+            <div class="block-card" data-category="situation">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>⚔️</span>
+                        <span data-i18n="prompt_builder.block_situation">Situation</span>
+                        <span class="block-tag-badge badge-situation">SITUATION</span>
+                    </div>
+                    <select class="block-select-preset" data-category="situation">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="situation"
+                    placeholder="heroic posture, holding glowing sword, looking at viewer..."
+                    data-i18n-placeholder="prompt_builder.placeholder_situation"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="situation"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="situation"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="situation"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- 6. LOCATION -->
+            <div class="block-card" data-category="location">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>🏰</span>
+                        <span data-i18n="prompt_builder.block_location">Location</span>
+                        <span class="block-tag-badge badge-location">LOCATION</span>
+                    </div>
+                    <select class="block-select-preset" data-category="location">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="location"
+                    placeholder="enchanted forest, ancient stone ruins..."
+                    data-i18n-placeholder="prompt_builder.placeholder_location"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="location"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="location"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="location"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- 7. LIGHTING -->
+            <div class="block-card" data-category="lighting">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>💡</span>
+                        <span data-i18n="prompt_builder.block_lighting">Lighting</span>
+                        <span class="block-tag-badge badge-lighting">LIGHTING</span>
+                    </div>
+                    <select class="block-select-preset" data-category="lighting">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="lighting"
+                    placeholder="volumetric lighting, soft moonlight, rim glow..."
+                    data-i18n-placeholder="prompt_builder.placeholder_lighting"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="lighting"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="lighting"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="lighting"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- 8. SUFFIX -->
+            <div class="block-card" data-category="suffix">
+                <div class="block-header">
+                    <div class="block-title-tag">
+                        <span>✨</span>
+                        <span data-i18n="prompt_builder.block_suffix">Suffix</span>
+                        <span class="block-tag-badge badge-suffix">SUFFIX</span>
+                    </div>
+                    <select class="block-select-preset" data-category="suffix">
+                        <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                    </select>
+                </div>
+                <textarea class="block-textarea" data-category="suffix"
+                    placeholder="trending on artstation, 8k resolution, cinematic lighting..."
+                    data-i18n-placeholder="prompt_builder.placeholder_suffix"></textarea>
+                <div class="block-actions">
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-small btn-accent btn-save-block" data-category="suffix"
+                            data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                        <button class="btn-small btn-danger btn-delete-preset" data-category="suffix"
+                            data-i18n="prompt_builder.delete_block_btn">🗑️ Delete Preset</button>
+                    </div>
+                    <button class="btn-small btn-clear-block" data-category="suffix"
+                        data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Real-Time Combined Prompt Preview Panel -->
+        <div class="preview-card">
+            <div class="preview-header">
+                <div class="preview-title">
+                    <span>⚡</span>
+                    <span data-i18n="prompt_builder.preview_title">Real-Time Combined Prompt</span>
+                </div>
+                <div class="preview-stats">
+                    <span id="charCount">0</span> chars | <span id="wordCount">0</span> words
+                </div>
+            </div>
+
+            <div class="preview-box" id="previewText"></div>
+
+            <div class="preview-actions">
+                <span id="statusMessage" class="status-msg"></span>
+                <div style="display:flex; gap:12px;">
+                    <button id="btnCopyPrompt" class="btn-small btn-accent"
+                        data-i18n="prompt_builder.copy_prompt_btn">📋 Copy Prompt</button>
+                    <button id="btnSaveActive" class="btn-save" data-i18n="prompt_builder.save_active_btn">💾 Save
+                        Active Config to Node</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Block Preset Naming -->
+    <div class="modal-overlay" id="saveBlockModal">
+        <div class="modal-card">
+            <h3 class="modal-title" data-i18n="prompt_builder.modal_save_block_title">Save Block Preset</h3>
+            <div class="form-group">
+                <label data-i18n="prompt_builder.modal_block_title_label">Preset Name</label>
+                <input type="text" id="modalBlockTitleInput" placeholder="e.g., Cyberpunk Warrior Girl"
+                    data-i18n-placeholder="prompt_builder.modal_block_title_placeholder">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-small" id="modalBlockCancel" data-i18n="prompt_builder.btn_cancel">Cancel</button>
+                <button class="btn-small btn-accent" id="modalBlockConfirm"
+                    data-i18n="prompt_builder.btn_confirm">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Scene Preset Naming -->
+    <div class="modal-overlay" id="saveSceneModal">
+        <div class="modal-card">
+            <h3 class="modal-title" data-i18n="prompt_builder.modal_save_scene_title">Save Scene Preset</h3>
+            <div class="form-group">
+                <label data-i18n="prompt_builder.modal_scene_name_label">Scene Name</label>
+                <input type="text" id="modalSceneNameInput" placeholder="e.g., Dark Forest Scene"
+                    data-i18n-placeholder="prompt_builder.modal_scene_name_placeholder">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-small" id="modalSceneCancel" data-i18n="prompt_builder.btn_cancel">Cancel</button>
+                <button class="btn-small btn-accent" id="modalSceneConfirm"
+                    data-i18n="prompt_builder.btn_confirm">Save</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

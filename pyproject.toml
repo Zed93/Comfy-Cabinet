@@ -1,6 +1,6 @@
 [project]
 name = "comfy-cabinet"
-version = "0.1.3"
+version = "0.1.5"
 description = "A ComfyUI custom node pack to manage checkpoint presets (steps, CFG, samplers, schedulers, and prompt prefixes/suffixes)."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -8,7 +8,9 @@ license = { file = "LICENSE" }
 authors = [
     { name = "Zed93" }
 ]
-dependencies = []
+dependencies = [
+    "aiohttp>=3.8.0"
+]
 
 [project.urls]
 Repository = "https://github.com/Zed93/Comfy-Cabinet"
@@ -19,3 +21,9 @@ DisplayName = "Comfy Cabinet"
 Icon = "https://raw.githubusercontent.com/Zed93/Comfy-Cabinet/main/web/assets/images/icon.png"
 Banner = "https://raw.githubusercontent.com/Zed93/Comfy-Cabinet/main/web/assets/images/banner.png"
 requires-comfyui = ">=0.2.4"
+
+[tool.pyright]
+include = ["."]
+executionEnvironments = [
+    { root = "." }
+]

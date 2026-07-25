@@ -2,9 +2,9 @@ import os
 import sqlite3
 import json
 from aiohttp import web
-import folder_paths
-import comfy.samplers
-from server import PromptServer
+import folder_paths  # type: ignore
+import comfy.samplers  # type: ignore
+from server import PromptServer  # type: ignore
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "checkpoint_configs.db")
 
