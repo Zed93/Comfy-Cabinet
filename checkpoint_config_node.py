@@ -153,8 +153,8 @@ class EasyCheckpointConfigLoader:
             }
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "VAE", "INT", "FLOAT", "*", "*", "STRING")
-    RETURN_NAMES = ("MODEL", "CLIP", "VAE", "steps", "cfg", "sampler_name", "scheduler", "final_prompt")
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE", "INT", "FLOAT", "*", "*", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("MODEL", "CLIP", "VAE", "steps", "cfg", "sampler_name", "scheduler", "prefix", "suffix", "final_prompt")
     FUNCTION = "process"
     CATEGORY = "🗄️ Comfy Cabinet"
 
@@ -176,13 +176,16 @@ class EasyCheckpointConfigLoader:
             
         separator = global_configs.get("prompt_separator", ", ").replace("\\n", "\n").replace("\\t", "\t")
 
+        prefix = settings.get("prefix_prompt", "") or ""
+        suffix = settings.get("suffix_prompt", "") or ""
+
         prompt_segments = []
-        if settings["prefix_prompt"]: prompt_segments.append(settings["prefix_prompt"])
+        if prefix: prompt_segments.append(prefix)
         if user_prompt: prompt_segments.append(user_prompt)
-        if settings["suffix_prompt"]: prompt_segments.append(settings["suffix_prompt"])
+        if suffix: prompt_segments.append(suffix)
             
         full_prompt = separator.join(prompt_segments)
-        return (model, clip, vae, settings["steps"], settings["cfg"], settings["sampler_name"], settings["scheduler"], full_prompt)
+        return (model, clip, vae, settings["steps"], settings["cfg"], settings["sampler_name"], settings["scheduler"], prefix, suffix, full_prompt)
 
 NODE_CLASS_MAPPINGS = {"EasyCheckpointConfigLoader": EasyCheckpointConfigLoader}
 NODE_DISPLAY_NAME_MAPPINGS = {"EasyCheckpointConfigLoader": "🎨 Easy Checkpoint Config Loader"}
