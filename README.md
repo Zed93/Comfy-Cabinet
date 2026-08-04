@@ -2,7 +2,7 @@
 
 Welcome to the **Comfy Cabinet**, a boutique virtual exhibit of handcrafted ComfyUI custom nodes. No fluff, just a clean, offline-first space where your nodes sit comfortably on velvet shelves, waiting to save your workflow from the depths of chaos.
 
-Current Exhibition: 🎨 **Easy Checkpoint Config Loader** & 🧩 **Easy Prompt Builder**
+Current Exhibition: 🎨 **Easy Checkpoint Config Loader**, 🧩 **Easy Prompt Builder**, & 💊 **Easy LoRA Config Loader**
 
 ---
 
@@ -65,6 +65,36 @@ The **Easy Prompt Builder** breaks your prompts into structured, modular buildin
 
 ---
 
+## 💊 Easy LoRA Manager & Config Loader
+
+### 🧐 The Problem
+
+Managing dozens or hundreds of LoRA models in ComfyUI is chaotic. Finding trigger words, ideal strength weights, Civitai previews, author information, and model versions requires constantly leaving ComfyUI to search Civitai manually. Once found, applying weights and trigger words back to your canvas nodes is tedious.
+
+---
+
+### 💡 The Solution
+
+The **Easy LoRA Manager & Config Loader** is a visual LoRA management dashboard and node system integrated right into ComfyUI.
+
+- **Automated Civitai Metadata Sync**: Fetches model titles, cover images/videos, creator usernames, HTML descriptions, tags, and trigger words directly from Civitai (supporting both SFW `civitai.com` and NSFW `civitai.red` domain modes), caching all preview media locally into `civitai_cache/`.
+- **Card Gallery with Video Hover Playback**: Displays your local LoRAs in a responsive grid with video hover preview playback and fast filtering by Base Model Architecture (`Illustrious`, `Pony`, `SD 1.5`, `SDXL 1.0`), Author, and Tags.
+- **Collapsible Search Filters**: Keep your gallery clean with a collapsible search filter panel featuring real-time active filter badges and state persistence.
+- **Multiple Presets per LoRA**: Save multiple weight and prompt presets per LoRA card for instant switching.
+- **Direct Civitai Links & Single-Card Resync**: One-click **"🌐 See on CivitAI"** direct model page redirection and single-card metadata resync buttons.
+- **Instant Canvas Node Synchronization**: Click **"🚀 Send to ComfyUI"** inside the `Prompt Builder Config` tab to push your selected LoRA model, default weights (`strength_model`, `strength_clip`), and prompt builder blocks (`character`, `clothing`, `no_clothing`, `expression`, `situation`, `location`, `lighting`) directly to the **💊 Easy LoRA Config Loader** node on your active workflow canvas.
+
+#### 🚀 How to Use It
+
+- Drop the **💊 Easy LoRA Config Loader** node (`🗄️ Comfy Cabinet` category) onto your canvas.
+- Click the **"Easy Config"** button in your ComfyUI top menu and choose **"Easy LoRA Config"**.
+- Browse your gallery, search, or filter by Base Model architecture, Author, or Tag.
+- Open a LoRA card to inspect Civitai preview images/videos, description, versions, and trigger words.
+- In the **Prompt Builder Config** tab, fine-tune default weights and prompt blocks (or click **"🪄 Auto-fill Trigger Words"**).
+- Click **"🚀 Send to ComfyUI"** to instantly update the active node on your canvas.
+
+---
+
 ## 🛠️ Installation
 
 Simply clone this repository into your ComfyUI custom nodes folder:
@@ -77,5 +107,5 @@ git clone https://github.com/Zed93/Comfy-Cabinet.git
 
 ## 🧐 Tested with
 
-- ComfyUI 0.28.3
+- ComfyUI 0.30.1
 - ltdrdata/ComfyUI-Impact-Pack Facedetailer custom node
