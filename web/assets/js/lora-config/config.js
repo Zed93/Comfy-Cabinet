@@ -6,6 +6,7 @@ let activeSortOrder = "AZ";
 let currentDetailItem = null;
 let currentDomainMode = "civitai.com";
 let civitaiApiKey = "";
+let closeModalOnClickOutside = false;
 
 const fields = {
     search: null,
@@ -20,7 +21,8 @@ const fields = {
     expression: null,
     situation: null,
     location: null,
-    lighting: null
+    lighting: null,
+    closeOutsideCheckbox: null
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -37,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fields.situation = document.getElementById("block_situation");
     fields.location = document.getElementById("block_location");
     fields.lighting = document.getElementById("block_lighting");
+    fields.closeOutsideCheckbox = document.getElementById("closeOutsideCheckbox");
 
     // Add real-time input listeners to update Send to ComfyUI button visibility
     [fields.character, fields.clothing, fields.no_clothing, fields.expression, fields.situation, fields.location, fields.lighting].forEach(el => {
@@ -57,6 +60,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const syncBtn = document.getElementById("btnSyncAllMetadata");
         if (syncBtn) syncBtn.addEventListener("click", bulkSyncMetadata);
 
+        const detailModal = document.getElementById("detailModal");
+        if (detailModal) {
+            detailModal.addEventListener("click", (e) => {
+                if (closeModalOnClickOutside && e.target === detailModal) {
+                    closeDetailModal();
+                }
+            });
+        }
+
         const closeBtn = document.getElementById("closeDetailModal");
         if (closeBtn) closeBtn.addEventListener("click", closeDetailModal);
 
@@ -76,6 +88,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const closeSettingsBtn = document.getElementById("closeSettingsModal");
         if (closeSettingsBtn) closeSettingsBtn.addEventListener("click", closeSettingsModal);
 
+        if (fields.closeOutsideCheckbox) {
+            fields.closeOutsideCheckbox.addEventListener("change", (e) => {
+                closeModalOnClickOutside = e.target.checked;
+                saveGlobals();
+            });
+        }
+
         const saveSettingsBtn = document.getElementById("saveSettingsBtn");
         if (saveSettingsBtn) saveSettingsBtn.addEventListener("click", () => {
             saveGlobals();
@@ -94,6 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener("i18n-ready", initLoader);
     }
 });
+
+function closeDetailModal() {
+    const modal = document.getElementById("detailModal");
+    if (modal) modal.style.display = "none";
+}
 
 function setupDomainButtons() {
     const sfwBtn = document.getElementById("domainSfwBtn");
@@ -194,6 +218,12 @@ async function loadAllLoras() {
         if (globals.civitai_api_key) {
             civitaiApiKey = globals.civitai_api_key;
             if (fields.apiKeyInput) fields.apiKeyInput.value = globals.civitai_api_key;
+        }
+
+        const closeOutsideVal = globals.close_modal_on_click_outside !== undefined ? globals.close_modal_on_click_outside : localStorage.getItem("comfy-cabinet-close-outside");
+        closeModalOnClickOutside = (closeOutsideVal === "true" || closeOutsideVal === true);
+        if (fields.closeOutsideCheckbox) {
+            fields.closeOutsideCheckbox.checked = closeModalOnClickOutside;
         }
 
         populateBaseModelFilterBar();
@@ -626,9 +656,33 @@ function openDetailModal(item) {
     renderModalExamples(item.civitai_metadata?.images || []);
 
     // Tab 2: Description
+    const sanitizeHTML = (str) => {
+        if (!str) return "";
+        const temp = document.createElement("div");
+        temp.innerHTML = str;
+        const disallow = ["script", "iframe", "object", "embed", "link", "style", "form", "input"];
+        disallow.forEach(tag => {
+            const elms = temp.getElementsByTagName(tag);
+            for (let i = elms.length - 1; i >= 0; i--) {
+                elms[i].parentNode.removeChild(elms[i]);
+            }
+        });
+        const allElements = temp.getElementsByTagName("*");
+        for (let i = 0; i < allElements.length; i++) {
+            const attrs = allElements[i].attributes;
+            for (let j = attrs.length - 1; j >= 0; j--) {
+                const name = attrs[j].name.toLowerCase();
+                if (name.startsWith("on") || name.startsWith("javascript:")) {
+                    allElements[i].removeAttribute(attrs[j].name);
+                }
+            }
+        }
+        return temp.innerHTML;
+    };
+
     const descBox = document.getElementById("modalDescriptionContent");
     if (item.civitai_metadata?.description) {
-        descBox.innerHTML = item.civitai_metadata.description;
+        descBox.innerHTML = sanitizeHTML(item.civitai_metadata.description);
     } else {
         descBox.textContent = "No Civitai description available. Run 'Sync All Metadata' to fetch.";
     }
@@ -944,20 +998,65 @@ function renderModalExamples(images) {
                 info.className = "example-info";
 
                 if (meta.prompt) {
-                    info.innerHTML += `
-                        <div style="display:flex; justify-space-between; align-items:center;">
-                            <strong style="color:#a5b4fc;">PROMPT</strong>
-                            <button type="button" class="btn-insert-trigger" onclick="navigator.clipboard.writeText(\`${escapeHtml(meta.prompt)}\`);">📋 Copy</button>
-                        </div>
-                        <p style="font-family:monospace; font-size:0.85rem; word-break:break-word;">${escapeHtml(meta.prompt)}</p>
-                    `;
+                    const promptBox = document.createElement("div");
+                    promptBox.className = "example-prompt-box";
+
+                    const header = document.createElement("div");
+                    header.className = "example-prompt-header";
+
+                    const label = document.createElement("div");
+                    label.className = "example-prompt-label positive";
+                    label.innerHTML = `<span>🎨</span> PROMPT`;
+
+                    const copyBtn = document.createElement("button");
+                    copyBtn.type = "button";
+                    copyBtn.className = "btn-copy-prompt";
+                    copyBtn.innerHTML = `📋 Copy`;
+                    copyBtn.addEventListener("click", () => {
+                        window.copyPromptToClipboard(meta.prompt, copyBtn);
+                    });
+
+                    header.appendChild(label);
+                    header.appendChild(copyBtn);
+
+                    const textEl = document.createElement("div");
+                    textEl.className = "example-prompt-text";
+                    textEl.textContent = meta.prompt;
+
+                    promptBox.appendChild(header);
+                    promptBox.appendChild(textEl);
+                    info.appendChild(promptBox);
                 }
 
                 if (meta.negativePrompt) {
-                    info.innerHTML += `
-                        <strong style="color:var(--text-muted); margin-top:6px;">NEGATIVE PROMPT</strong>
-                        <p style="font-family:monospace; font-size:0.8rem; word-break:break-word; color:var(--text-muted);">${escapeHtml(meta.negativePrompt)}</p>
-                    `;
+                    const negBox = document.createElement("div");
+                    negBox.className = "example-prompt-box negative";
+
+                    const header = document.createElement("div");
+                    header.className = "example-prompt-header";
+
+                    const label = document.createElement("div");
+                    label.className = "example-prompt-label negative";
+                    label.innerHTML = `<span>🚫</span> NEGATIVE PROMPT`;
+
+                    const copyBtn = document.createElement("button");
+                    copyBtn.type = "button";
+                    copyBtn.className = "btn-copy-prompt";
+                    copyBtn.innerHTML = `📋 Copy`;
+                    copyBtn.addEventListener("click", () => {
+                        window.copyPromptToClipboard(meta.negativePrompt, copyBtn);
+                    });
+
+                    header.appendChild(label);
+                    header.appendChild(copyBtn);
+
+                    const textEl = document.createElement("div");
+                    textEl.className = "example-prompt-text negative-text";
+                    textEl.textContent = meta.negativePrompt;
+
+                    negBox.appendChild(header);
+                    negBox.appendChild(textEl);
+                    info.appendChild(negBox);
                 }
 
                 card.appendChild(info);
@@ -969,6 +1068,27 @@ function renderModalExamples(images) {
         list.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 30px;">No example images or generation prompts available for this model.</div>`;
     }
 }
+
+window.copyPromptToClipboard = function(text, btnEl) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        if (window.Toast) {
+            window.Toast.success("Prompt copied to clipboard!");
+        }
+        if (btnEl) {
+            const originalContent = btnEl.innerHTML;
+            btnEl.innerHTML = "✓ Copied!";
+            btnEl.classList.add("copied");
+            setTimeout(() => {
+                btnEl.innerHTML = originalContent;
+                btnEl.classList.remove("copied");
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error("Failed to copy:", err);
+        if (window.Toast) window.Toast.error("Failed to copy prompt");
+    });
+};
 
 async function resyncSingleLora() {
     if (!currentDetailItem) return;
@@ -1240,13 +1360,18 @@ async function sendToComfyUI() {
 }
 
 async function saveGlobals() {
+    if (fields.closeOutsideCheckbox && window.ComfyCabinetSettings) {
+        window.ComfyCabinetSettings.setCloseModalOnClickOutside(fields.closeOutsideCheckbox.checked);
+        closeModalOnClickOutside = fields.closeOutsideCheckbox.checked;
+    }
     try {
         await fetch("/easy_lora_config/save_globals", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 domain_mode: currentDomainMode,
-                civitai_api_key: civitaiApiKey
+                civitai_api_key: civitaiApiKey,
+                close_modal_on_click_outside: String(closeModalOnClickOutside)
             })
         });
     } catch (err) {

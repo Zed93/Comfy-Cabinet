@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/lora_config.css">
     <script src="../../assets/js/i18n.js" data-lang-path="../../lang/"></script>
+    <script src="../../assets/js/toast.js"></script>
+    <script src="../../assets/js/modal_manager.js"></script>
 </head>
 <body>
     <div class="container" style="max-width: 1200px;">
@@ -274,11 +276,20 @@
 
                 <!-- API Key Input -->
                 <div class="form-group">
-                    <label>Civitai API Key (Optional)</label>
+                    <label data-i18n="lora_config.civitai_api_key_label">Civitai API Key (Optional)</label>
                     <div style="display: flex; gap: 8px;">
-                        <input type="password" id="civitaiApiKeyInput" placeholder="Paste your Civitai API Key...">
+                        <input type="password" id="civitaiApiKeyInput" placeholder="Paste your Civitai API Key..." data-i18n-placeholder="lora_config.civitai_api_key_placeholder">
                         <button type="button" id="toggleApiKeyBtn" class="btn-nav" style="padding: 10px 14px;">👁️</button>
                     </div>
+                </div>
+
+                <!-- Modal Close Behavior Setting -->
+                <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px;">
+                    <div>
+                        <label style="margin-bottom: 2px; text-transform: none; font-size: 0.9rem; color: white;" data-i18n="settings.close_outside_label">Close Modals on Clicking Outside</label>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); display: block;" data-i18n="settings.close_outside_desc">Dismiss any modal dialog across all Comfy Cabinet tools by clicking the dark background overlay.</span>
+                    </div>
+                    <input type="checkbox" id="closeOutsideCheckbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; margin-left: 12px;">
                 </div>
 
                 <!-- Diagnostic Health Check -->

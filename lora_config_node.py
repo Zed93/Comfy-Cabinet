@@ -2,6 +2,9 @@ import os
 import sqlite3
 import json
 import hashlib
+import asyncio
+import ipaddress
+from urllib.parse import urlparse
 import aiohttp
 from aiohttp import web
 import folder_paths  # type: ignore
@@ -10,6 +13,43 @@ from server import PromptServer  # type: ignore
 DB_PATH = os.path.join(os.path.dirname(__file__), "lora_configs.db")
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "civitai_cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
+
+def is_safe_url(url):
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        if hostname.lower() in ('localhost', '127.0.0.1', '::1', '0.0.0.0'):
+            return False
+        try:
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                return False
+        except ValueError:
+            pass
+        return True
+    except Exception:
+        return False
+
+def mask_api_key(key_str):
+    if not key_str:
+        return ""
+    if len(key_str) <= 6:
+        return "••••"
+    return "••••••••" + key_str[-4:]
+
+def _hash_file(filepath):
+    hasher = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        chunk = f.read(1024 * 1024)
+        while chunk:
+            hasher.update(chunk)
+            chunk = f.read(1024 * 1024)
+    return hasher.hexdigest()
+
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -275,6 +315,9 @@ async def api_cache_image(request):
     if not url:
         return web.json_response({"error": "url parameter required"}, status=400)
 
+    if not is_safe_url(url):
+        return web.json_response({"error": "Invalid or unsafe URL format"}, status=400)
+
     url_hash = hashlib.md5(url.encode()).hexdigest()
     ext = get_ext_from_url_or_ct(url)
     cached_filename = f"{url_hash}.{ext}"
@@ -364,6 +407,8 @@ async def api_get_resources(request):
     try:
         loras = folder_paths.get_filename_list("loras")
         globals_dict = get_global_settings()
+        if "civitai_api_key" in globals_dict:
+            globals_dict["civitai_api_key"] = mask_api_key(globals_dict["civitai_api_key"])
         return web.json_response({
             "loras": loras,
             "global_configs": globals_dict
@@ -379,6 +424,8 @@ async def api_get_all_loras_full(request):
         for lora in loras:
             result.append(get_lora_settings(lora))
         globals_dict = get_global_settings()
+        if "civitai_api_key" in globals_dict:
+            globals_dict["civitai_api_key"] = mask_api_key(globals_dict["civitai_api_key"])
         return web.json_response({
             "items": result,
             "global_configs": globals_dict
@@ -478,6 +525,8 @@ async def api_save_globals(request):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         for key, value in data.items():
+            if key == "civitai_api_key" and value.startswith("••••"):
+                continue
             cursor.execute("INSERT OR REPLACE INTO global_settings (key, value) VALUES (?, ?)", (key, str(value)))
         conn.commit()
         conn.close()
@@ -497,14 +546,7 @@ async def api_compute_hash(request):
         if not full_path or not os.path.exists(full_path):
             return web.json_response({"error": "File not found"}, status=404)
 
-        hasher = hashlib.sha256()
-        with open(full_path, "rb") as f:
-            chunk = f.read(1024 * 1024)
-            while chunk:
-                hasher.update(chunk)
-                chunk = f.read(1024 * 1024)
-        
-        sha256_hash = hasher.hexdigest()
+        sha256_hash = await asyncio.to_thread(_hash_file, full_path)
         return web.json_response({"sha256": sha256_hash})
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
@@ -514,13 +556,7 @@ async def fetch_civitai_for_lora(session, lora_name, domain, api_key):
     file_hash = ""
     if full_path and os.path.exists(full_path):
         try:
-            hasher = hashlib.sha256()
-            with open(full_path, "rb") as f:
-                chunk = f.read(1024 * 1024)
-                while chunk:
-                    hasher.update(chunk)
-                    chunk = f.read(1024 * 1024)
-            file_hash = hasher.hexdigest()
+            file_hash = await asyncio.to_thread(_hash_file, full_path)
         except Exception:
             pass
 

@@ -504,26 +504,122 @@
 }
 
 .example-card {
-    background: #1f2937;
+    background: rgba(15, 23, 42, 0.7);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
     width: 100%;
-    max-width: 600px;
+    max-width: 680px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.example-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
 }
 
 .example-media {
     width: 100%;
-    max-height: 500px;
+    max-height: 480px;
     object-fit: contain;
-    background: #000;
+    background: #020617;
     display: block;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .example-info {
-    padding: 16px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
+}
+
+.example-prompt-box {
+    background: rgba(2, 6, 23, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.example-prompt-box:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.example-prompt-box.negative {
+    background: rgba(23, 10, 15, 0.5);
+    border-color: rgba(239, 68, 68, 0.15);
+}
+
+.example-prompt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.example-prompt-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.example-prompt-label.positive {
+    color: #a5b4fc;
+}
+
+.example-prompt-label.negative {
+    color: #fca5a5;
+}
+
+.btn-copy-prompt {
+    background: rgba(99, 102, 241, 0.15);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-copy-prompt:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.btn-copy-prompt.copied {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
+.example-prompt-text {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.85rem;
+    line-height: 1.55;
+    color: #e2e8f0;
+    max-height: 140px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    word-break: break-word;
+    white-space: pre-wrap;
+    padding: 4px 2px;
+}
+
+.example-prompt-text.negative-text {
+    color: #cbd5e1;
 }

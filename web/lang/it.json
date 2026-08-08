@@ -11,7 +11,9 @@
     "tool2_button": "Apri Strumento",
     "tool3_title": "Easy LoRA Config",
     "tool3_desc": "Configura i tuoi LoRA con i dati di Civitai (domini SFW e NSFW). Scarica automaticamente autore, anteprime media, trigger word e assegnali ai blocchi del prompt builder.",
-    "tool3_button": "Apri Strumento"
+    "tool3_button": "Apri Strumento",
+    "settings_btn": "⚙️ Impostazioni Cabinet",
+    "settings_title": "⚙️ Impostazioni Generali Comfy Cabinet"
   },
   "easy_config": {
     "page_title": "Easy Checkpoint Config",
@@ -100,7 +102,9 @@
     "text_structure_subtitle": "Struttura del Testo",
     "prompt_separator_label": "Separatore di Prompt (es: \" , \" oppure \" \\n \" per andare a capo)",
     "prompt_separator_placeholder": ", ",
-    "save_general_settings_btn": "Salva impostazioni generali"
+    "save_general_settings_btn": "Salva impostazioni generali",
+    "close_outside_label": "Chiudi Modali Cliccando all'Esterno",
+    "close_outside_desc": "Chiudi qualsiasi finestra modale in tutti gli strumenti Comfy Cabinet cliccando sullo sfondo scuro."
   },
   "dropdown": {
     "no_results": "Nessun abbinamento"

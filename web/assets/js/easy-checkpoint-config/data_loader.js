@@ -78,10 +78,16 @@ async function saveModelSettings() {
         if (r.ok) {
             const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.save_success") : "Impostazioni salvate con successo! ✅";
             showStatus("modelStatus", msg, "var(--success)");
+            if (window.Toast) window.Toast.success(msg);
+        } else {
+            const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.save_error") : "Errore nel salvataggio ❌";
+            showStatus("modelStatus", msg, "var(--error)");
+            if (window.Toast) window.Toast.error(msg);
         }
     } catch (err) {
         const msg = (window.i18n && window.i18n.t) ? window.i18n.t("status.save_error") : "Errore nel salvataggio ❌";
         showStatus("modelStatus", msg, "var(--error)");
+        if (window.Toast) window.Toast.error(msg);
     }
 }
 

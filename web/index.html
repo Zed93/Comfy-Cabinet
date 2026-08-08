@@ -7,10 +7,13 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/i18n.js" data-lang-path="lang/"></script>
+    <script src="assets/js/toast.js"></script>
+    <script src="assets/js/modal_manager.js"></script>
 </head>
 <body>
     <div class="container">
-        <header>
+        <header style="position: relative;">
+            <button type="button" id="btnOpenGlobalSettings" class="btn-nav" style="position: absolute; right: 0; top: 0;" data-i18n="home.settings_btn">⚙️ Cabinet Settings</button>
             <h1 data-i18n="home.title">🗄️ Comfy Cabinet</h1>
             <p data-i18n="home.subtitle">Your collection of custom tools and configurations</p>
         </header>
@@ -44,5 +47,63 @@
             </a>
         </div>
     </div>
+
+    <!-- Global Cabinet Settings Modal -->
+    <div id="globalCabinetSettingsModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="card" style="max-width: 520px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 1.25rem; color: white;" data-i18n="home.settings_title">⚙️ Comfy Cabinet Global Settings</h2>
+                <button type="button" id="btnCloseGlobalSettings" class="btn-nav" style="padding: 4px 10px;">✕</button>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px;">
+                <div>
+                    <label style="margin-bottom: 2px; text-transform: none; font-size: 0.9rem; color: white;" data-i18n="settings.close_outside_label">Close Modals on Clicking Outside</label>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); display: block;" data-i18n="settings.close_outside_desc">Dismiss any modal dialog across all Comfy Cabinet tools by clicking the dark background overlay.</span>
+                </div>
+                <input type="checkbox" id="globalCloseOutsideCheckbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; margin-left: 12px;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" id="btnSaveGlobalCabinetSettings" class="btn-save">💾 Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const modal = document.getElementById("globalCabinetSettingsModal");
+            const openBtn = document.getElementById("btnOpenGlobalSettings");
+            const closeBtn = document.getElementById("btnCloseGlobalSettings");
+            const checkbox = document.getElementById("globalCloseOutsideCheckbox");
+            const saveBtn = document.getElementById("btnSaveGlobalCabinetSettings");
+
+            if (checkbox) {
+                checkbox.checked = window.ComfyCabinetSettings.getCloseModalOnClickOutside();
+            }
+
+            if (openBtn && modal) {
+                openBtn.addEventListener("click", () => {
+                    modal.style.display = "flex";
+                });
+            }
+
+            if (closeBtn && modal) {
+                closeBtn.addEventListener("click", () => {
+                    modal.style.display = "none";
+                });
+            }
+
+            if (saveBtn) {
+                saveBtn.addEventListener("click", () => {
+                    if (checkbox) {
+                        window.ComfyCabinetSettings.setCloseModalOnClickOutside(checkbox.checked);
+                    }
+                    if (modal) modal.style.display = "none";
+                    if (window.Toast) window.Toast.success("Global settings saved!");
+                });
+            }
+        });
+    </script>
 </body>
 </html>
