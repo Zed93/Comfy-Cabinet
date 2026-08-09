@@ -1,109 +1,892 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="system" data-color="vermillion">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="home.page_title">Comfy Cabinet - Home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-i18n="home.page_title">Comfy Cabinet - Tactile Studio</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/lora_config.css">
+    <link rel="stylesheet" href="assets/css/prompt_builder.css">
+    <script src="assets/js/cabinet_ui.js" defer></script>
     <script src="assets/js/i18n.js" data-lang-path="lang/"></script>
     <script src="assets/js/toast.js"></script>
     <script src="assets/js/modal_manager.js"></script>
+    <script src="assets/js/dropdown.js"></script>
+    <script src="assets/js/router.js" defer></script>
+    <script src="assets/js/dashboard.js" defer></script>
+    <script src="assets/js/easy-checkpoint-config/config.js" defer></script>
+    <script src="assets/js/lora-config/config.js" defer></script>
+    <script src="assets/js/prompt-builder/builder.js" defer></script>
 </head>
 <body>
-    <div class="container">
-        <header style="position: relative;">
-            <button type="button" id="btnOpenGlobalSettings" class="btn-nav" style="position: absolute; right: 0; top: 0;" data-i18n="home.settings_btn">⚙️ Cabinet Settings</button>
-            <h1 data-i18n="home.title">🗄️ Comfy Cabinet</h1>
-            <p data-i18n="home.subtitle">Your collection of custom tools and configurations</p>
-        </header>
+    <div class="app-container">
+        <!-- Desktop Side Navigation Menu -->
+        <nav class="nav-menu" id="nav-menu">
+            <div class="brand-header">🗄️ Comfy Cabinet</div>
+            <div class="nav-links">
+                <a href="#/dashboard" class="nav-item active" data-route="dashboard">
+                    <span>🏠</span><span data-i18n="nav.dashboard">Dashboard</span>
+                </a>
+                <a href="#/checkpoint" class="nav-item" data-route="checkpoint">
+                    <span>🎨</span><span data-i18n="nav.checkpoints">Easy Checkpoint Config</span>
+                </a>
+                <a href="#/lora" class="nav-item" data-route="lora">
+                    <span>💊</span><span data-i18n="nav.loras">Easy LoRA Config</span>
+                </a>
+                <a href="#/prompt" class="nav-item" data-route="prompt">
+                    <span>🧩</span><span data-i18n="nav.prompts">Easy Prompt Builder</span>
+                </a>
+            </div>
+        </nav>
 
-        <div class="cabinet-grid">
-            <a href="tools/easy-checkpoint-config/index.html" class="tool-card">
-                <div>
-                    <div class="tool-icon">🎨</div>
-                    <div class="tool-title" data-i18n="home.tool_title">Easy Checkpoint Config</div>
-                    <div class="tool-desc" data-i18n="home.tool_desc">Manage presets for your favorite models. Configure steps, CFG, samplers, and fixed prompts (prefixes/suffixes).</div>
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Top Bar Header -->
+            <header class="top-bar">
+                <div class="mobile-header-left">
+                    <button class="icon-btn" id="mobile-menu-toggle" style="border: none; background: transparent; box-shadow: none;">☰</button>
+                    <span>Comfy Cabinet</span>
                 </div>
-                <div class="tool-btn" data-i18n="home.tool_button">Open Tool</div>
-            </a>
+                <div class="top-bar-title">
+                    <span>🗄️ Comfy Cabinet Studio</span>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="openSettingsModal" title="Preferences">⚙️</button>
+                </div>
+            </header>
 
-            <a href="tools/prompt-builder/index.html" class="tool-card">
-                <div>
-                    <div class="tool-icon">🧩</div>
-                    <div class="tool-title" data-i18n="home.tool2_title">Easy Prompt Builder</div>
-                    <div class="tool-desc" data-i18n="home.tool2_desc">Build positive prompts with 8 modular blocks: prefix, character, clothing, expression, situation, location, lighting, and suffix. Save presets per block or full scenes.</div>
+            <!-- ================= VIEW 1: DASHBOARD ================= -->
+            <section id="view-dashboard" class="view-section">
+                <div class="tool-header">
+                    <div class="flex justify-between items-center w-full">
+                        <div>
+                            <h1 style="font-size: 1.6rem; margin-bottom: 6px;" data-i18n="home.title">🗄️ Comfy Cabinet</h1>
+                            <p style="font-size: 0.95rem; color: var(--text-muted);" data-i18n="home.subtitle">Your tactile collection of custom tools and configurations</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="tool-btn" data-i18n="home.tool2_button">Open Tool</div>
-            </a>
 
-            <a href="tools/lora-config/index.html" class="tool-card">
-                <div>
-                    <div class="tool-icon">💊</div>
-                    <div class="tool-title" data-i18n="home.tool3_title">Easy LoRA Config</div>
-                    <div class="tool-desc" data-i18n="home.tool3_desc">Configure LoRAs with Civitai data (SFW & NSFW domains). Automatically fetch author, preview media, trigger words, and assign prompt builder blocks.</div>
+                <!-- Manager Toolbar -->
+                <div class="card manager-toolbar" style="margin-bottom: 16px;">
+                    <div class="toolbar-left">
+                        <div class="search-box-wrapper" style="min-width: 320px;">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="dashboardSearchInput" placeholder="Search tools..." data-i18n-placeholder="home.search_tools_placeholder">
+                        </div>
+                    </div>
+
+                    <div class="toolbar-right">
+                        <select id="sortSelectDashboard" class="btn-nav" style="padding: 8px 12px; font-size: 0.85rem; cursor: pointer;">
+                            <option value="AZ" selected data-i18n="home.sort_az">Alphabetical (A-Z)</option>
+                            <option value="ZA" data-i18n="home.sort_za">Alphabetical (Z-A)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="tool-btn" data-i18n="home.tool3_button">Open Tool</div>
-            </a>
+
+                <!-- Filters Panel Card -->
+                <div class="card filters-panel-card" style="padding: 16px 20px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" id="filtersToggleHeader">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 800; font-size: 1rem;" data-i18n="home.filters_panel_title">🔍 Search Filters</span>
+                            <span id="activeFiltersBadge" style="display: none; background: var(--accent); color: var(--text-on-accent); font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">0 Active</span>
+                        </div>
+                        <button type="button" class="btn-nav" id="btnToggleFilters" style="padding: 4px 10px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+                            <span id="toggleFiltersBtnText" data-i18n="home.show_filters_btn">🔽 Show Filters</span>
+                        </button>
+                    </div>
+
+                    <div id="filtersCollapseContainer" style="margin-top: 14px; display: none; flex-direction: column; gap: 16px;">
+                        <div id="activeFiltersSummaryRow" style="display: none; align-items: center; justify-content: space-between; background: var(--bg-base); border: 2px solid var(--border); padding: 10px 14px; border-radius: var(--radius-md); flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" id="activeFilterChipsContainer">
+                                <span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Active Filters:</span>
+                            </div>
+                            <button type="button" id="btnClearAllFilters" class="btn btn-small" style="color: var(--danger); border-color: var(--danger); font-size: 0.75rem;">🧹 Clear All</button>
+                        </div>
+
+                        <div>
+                            <label data-i18n="home.type_filter_label" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Category / Type Filter</label>
+                            <div class="tags-filter-bar" id="dashboardTypeFilterBar">
+                                <span class="tag-filter-pill active" data-type="ALL" data-i18n="home.all_types">All Types</span>
+                                <span class="tag-filter-pill" data-type="Tool" data-i18n="home.type_tool">🛠️ Tool</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Tools Grid -->
+                <div class="tactile-card-grid" id="toolsGrid"></div>
+            </section>
+
+            <!-- ================= VIEW 2: EASY CHECKPOINT CONFIG ================= -->
+            <section id="view-checkpoint" class="view-section" style="display: none;">
+                <div class="tool-header">
+                    <div class="flex justify-between items-center w-full">
+                        <div>
+                            <h1 style="font-size: 1.5rem; margin-bottom: 6px;" data-i18n="easy_config.title">🎨 Easy Checkpoint Config</h1>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">Intercept checkpoint loads and inject customized model settings, samplers, and prompts.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manager Toolbar -->
+                <div class="card manager-toolbar" style="margin-bottom: 16px;">
+                    <div class="toolbar-left">
+                        <div class="search-box-wrapper" style="min-width: 320px;">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="checkpointSearchInput" placeholder="Search checkpoints..." data-i18n-placeholder="easy_config.search_checkpoint_placeholder">
+                        </div>
+                    </div>
+
+                    <div class="toolbar-right">
+                        <select id="sortSelectCheckpoint" class="btn-nav" style="padding: 8px 12px; font-size: 0.85rem; cursor: pointer;">
+                            <option value="AZ" selected data-i18n="easy_config.sort_az">Alphabetical (A-Z)</option>
+                            <option value="ZA" data-i18n="easy_config.sort_za">Alphabetical (Z-A)</option>
+                            <option value="SYNCED" data-i18n="easy_config.sort_synced">Recently Synced</option>
+                        </select>
+
+                        <button type="button" id="btnSyncAllCheckpoints" class="btn btn-primary btn-sync-all">
+                            <span class="spinner" id="syncSpinnerCkpt" style="display: none;">⏳</span>
+                            <span id="syncBtnTextCkpt" data-i18n="easy_config.sync_all_checkpoints_btn">🔄 Sync All Metadata (Civitai)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Collapsible Filters Panel -->
+                <div class="card filters-panel-card" style="padding: 16px 20px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" id="filtersToggleHeaderCkpt">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 800; font-size: 1rem;" data-i18n="easy_config.filters_panel_title">🔍 Search Filters</span>
+                            <span id="activeFiltersBadgeCkpt" style="display: none; background: var(--accent); color: var(--text-on-accent); font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">0 Active</span>
+                        </div>
+                        <button type="button" class="btn-nav" id="btnToggleFiltersCkpt" style="padding: 4px 10px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+                            <span id="toggleFiltersBtnTextCkpt" data-i18n="easy_config.show_filters_btn">🔽 Show Filters</span>
+                        </button>
+                    </div>
+
+                    <div id="filtersCollapseContainerCkpt" style="margin-top: 14px; display: none; flex-direction: column; gap: 16px;">
+                        <div id="activeFiltersSummaryRowCkpt" style="display: none; align-items: center; justify-content: space-between; background: var(--bg-base); border: 2px solid var(--border); padding: 10px 14px; border-radius: var(--radius-md); flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" id="activeFilterChipsContainerCkpt">
+                                <span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Active Filters:</span>
+                            </div>
+                            <button type="button" id="btnClearAllFiltersCkpt" class="btn btn-small" style="color: var(--danger); border-color: var(--danger); font-size: 0.75rem;">🧹 Clear All</button>
+                        </div>
+
+                        <div>
+                            <label data-i18n="easy_config.base_model_fast_filter" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">BASE MODEL ARCHITECTURE</label>
+                            <div class="tags-filter-bar" id="baseModelFilterBar">
+                                <span class="tag-filter-pill active" data-base="ALL"><span data-i18n="easy_config.all_base_models">All Base Models</span> (<span class="pill-count">0</span>)</span>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label data-i18n="easy_config.author_filter" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Author / Creator</label>
+                                <div class="select-box-container">
+                                    <div class="select-trigger" id="authorFilterTrigger" data-i18n="easy_config.all_authors">All Authors</div>
+                                    <div class="dropdown-panel" id="authorFilterPanel">
+                                        <div class="dropdown-search-wrapper">
+                                            <input type="text" id="authorFilterSearch" placeholder="Search author...">
+                                        </div>
+                                        <div class="dropdown-items-list" id="authorFilterList"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label data-i18n="easy_config.tags_filter" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">CivitAI Tags</label>
+                                <div class="select-box-container">
+                                    <div class="select-trigger" id="tagFilterTrigger" data-i18n="easy_config.all_tags">All Tags</div>
+                                    <div class="dropdown-panel" id="tagFilterPanel">
+                                        <div class="dropdown-search-wrapper">
+                                            <input type="text" id="tagFilterSearch" placeholder="Search tag...">
+                                        </div>
+                                        <div class="dropdown-items-list" id="tagFilterList"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tactile-card-grid" id="checkpointGrid"></div>
+                <div id="noCheckpointsMsg" style="display: none; text-align: center; color: var(--text-muted); padding: 50px; font-weight: 600;">
+                    No matching checkpoints found.
+                </div>
+            </section>
+
+            <!-- ================= VIEW 3: EASY LORA CONFIG ================= -->
+            <section id="view-lora" class="view-section" style="display: none;">
+                <div class="tool-header">
+                    <div class="flex justify-between items-center w-full">
+                        <div>
+                            <h1 style="font-size: 1.5rem; margin-bottom: 6px;" data-i18n="lora_config.title">💊 Easy LoRA Config Loader</h1>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">Inspect, tag, and configure LoRA models with Civitai metadata, triggers, and prompt builder mappings.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manager Toolbar -->
+                <div class="card manager-toolbar" style="margin-bottom: 16px;">
+                    <div class="toolbar-left">
+                        <div class="search-box-wrapper" style="min-width: 320px;">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="loraSearchInput" placeholder="Search LoRAs by name, tag, creator..." data-i18n-placeholder="lora_config.search_lora_placeholder">
+                        </div>
+                    </div>
+
+                    <div class="toolbar-right">
+                        <select id="sortSelectLora" class="btn-nav" style="padding: 8px 12px; font-size: 0.85rem; cursor: pointer;">
+                            <option value="AZ" selected data-i18n="lora_config.sort_az">Alphabetical (A-Z)</option>
+                            <option value="ZA" data-i18n="lora_config.sort_za">Alphabetical (Z-A)</option>
+                            <option value="SYNCED" data-i18n="lora_config.sort_synced">Recently Synced</option>
+                        </select>
+
+                        <button type="button" id="btnSyncAllMetadata" class="btn btn-primary btn-sync-all">
+                            <span class="spinner" id="syncSpinner" style="display: none;">⏳</span>
+                            <span id="syncBtnText" data-i18n="lora_config.sync_all_btn">🔄 Sync All Metadata (Civitai)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Collapsible Filters Section -->
+                <div class="card filters-panel-card" style="padding: 16px 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;" id="filtersToggleHeaderLora">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 800; font-size: 1rem;" data-i18n="lora_config.filters_panel_title">🔍 Search Filters</span>
+                            <span id="activeFiltersBadgeLora" style="display: none; background: var(--accent); color: var(--text-on-accent); font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">0 Active</span>
+                        </div>
+                        <button type="button" class="btn-nav" id="btnToggleFiltersLora" style="padding: 4px 10px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+                            <span id="toggleFiltersBtnTextLora" data-i18n="lora_config.show_filters_btn">🔽 Show Filters</span>
+                        </button>
+                    </div>
+
+                    <div id="filtersCollapseContainerLora" style="margin-top: 14px; display: none; flex-direction: column; gap: 16px;">
+                        <div id="activeFiltersSummaryRowLora" style="display: none; align-items: center; justify-content: space-between; background: var(--bg-base); border: 2px solid var(--border); padding: 10px 14px; border-radius: var(--radius-md); flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" id="activeFilterChipsContainerLora">
+                                <span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Active Filters:</span>
+                            </div>
+                            <button type="button" id="btnClearAllFiltersLora" class="btn btn-small" style="color: var(--danger); border-color: var(--danger); font-size: 0.75rem;">🧹 Clear All</button>
+                        </div>
+
+                        <div>
+                            <label data-i18n="lora_config.type_filter_label" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">LoRA Type / Category</label>
+                            <div class="tags-filter-bar" id="typeFilterBar">
+                                <span class="tag-filter-pill active" data-type="ALL">All Types</span>
+                                <span class="tag-filter-pill" data-type="Character">👤 Character</span>
+                                <span class="tag-filter-pill" data-type="Style">🎨 Style</span>
+                                <span class="tag-filter-pill" data-type="Concept">💡 Concept</span>
+                                <span class="tag-filter-pill" data-type="Clothing">👗 Clothing</span>
+                                <span class="tag-filter-pill" data-type="Pose">🤸 Pose</span>
+                                <span class="tag-filter-pill" data-type="Background">🏞️ Background</span>
+                                <span class="tag-filter-pill" data-type="Action">🎬 Action</span>
+                                <span class="tag-filter-pill" data-type="Objects">📦 Objects</span>
+                                <span class="tag-filter-pill" data-type="Anime">🌸 Anime</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label data-i18n="lora_config.base_model_fast_filter" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Base Model Architecture</label>
+                            <div class="tags-filter-bar" id="baseModelFilterBarLora">
+                                <span class="tag-filter-pill active" data-base="ALL" data-i18n="lora_config.all_base_models">All Base Models</span>
+                            </div>
+                        </div>
+
+                        <div class="grid-2" style="gap: 16px;">
+                            <div>
+                                <label data-i18n="lora_config.author_filter" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Filter by Author</label>
+                                <div class="select-box-container">
+                                    <div class="select-trigger" id="authorFilterTriggerLora">Filter by author...</div>
+                                    <div class="dropdown-panel" id="authorFilterPanelLora">
+                                        <div class="dropdown-search-wrapper">
+                                            <input type="text" id="authorFilterSearchLora" placeholder="Search author...">
+                                        </div>
+                                        <div class="dropdown-items-list" id="authorFilterListLora"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label data-i18n="lora_config.tags_filter" style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Filter by Tag</label>
+                                <div class="select-box-container">
+                                    <div class="select-trigger" id="tagFilterTriggerLora">Filter by tag...</div>
+                                    <div class="dropdown-panel" id="tagFilterPanelLora">
+                                        <div class="dropdown-search-wrapper">
+                                            <input type="text" id="tagFilterSearchLora" placeholder="Search tag...">
+                                        </div>
+                                        <div class="dropdown-items-list" id="tagFilterListLora"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lora-grid" id="loraGrid" style="margin-top: 10px;">
+                    <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px; font-weight: 600;">
+                        Loading local LoRAs...
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 4: EASY PROMPT BUILDER ================= -->
+            <section id="view-prompt" class="view-section" style="display: none;">
+                <div class="tool-header">
+                    <div class="flex justify-between items-center w-full">
+                        <div>
+                            <h1 style="font-size: 1.5rem; margin-bottom: 6px;" data-i18n="prompt_builder.title">🧩 Easy Prompt Builder</h1>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">Construct positive prompts modularly with presets, custom block categories, and live synthesis preview.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Toolbar: Scene Preset & Separator -->
+                <div class="card top-bar-card">
+                    <div class="scene-preset-group">
+                        <label style="margin:0; white-space:nowrap;" data-i18n="prompt_builder.scene_preset_label">Full Scene Preset</label>
+                        <select id="scenePresetSelect">
+                            <option value="" data-i18n="prompt_builder.select_scene_placeholder">Choose scene preset...</option>
+                        </select>
+                        <button id="btnSaveScene" class="btn btn-small btn-primary" data-i18n="prompt_builder.save_scene_btn">💾 Save Scene</button>
+                        <button id="btnDeleteScene" class="btn btn-small" style="color: var(--danger); border-color: var(--danger);" data-i18n="prompt_builder.delete_scene_btn">🗑️ Delete Scene</button>
+                    </div>
+                    <div class="separator-group">
+                        <label style="margin:0;" data-i18n="prompt_builder.prompt_separator_label">Separator</label>
+                        <select id="separatorSelect">
+                            <option value=", ">, (Comma & Space)</option>
+                            <option value="\n">↵ (Newline)</option>
+                            <option value=" | ">| (Pipe)</option>
+                            <option value=" BREAK ">BREAK</option>
+                            <option value=" ">Space</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 8 Modular Prompt Block Cards -->
+                <div class="blocks-grid">
+                    <!-- 1. PREFIX -->
+                    <div class="card block-card" data-category="prefix">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>🏷️</span>
+                                <span data-i18n="prompt_builder.block_prefix">Prefix</span>
+                                <span class="block-tag-badge badge-prefix">PREFIX</span>
+                            </div>
+                            <select class="block-select-preset" data-category="prefix">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="prefix" placeholder="masterpiece, best quality, ultra detailed..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="prefix" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="prefix" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="prefix" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- 2. CHARACTER -->
+                    <div class="card block-card" data-category="character">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>👤</span>
+                                <span data-i18n="prompt_builder.block_character">Character</span>
+                                <span class="block-tag-badge badge-character">CHARACTER</span>
+                            </div>
+                            <select class="block-select-preset" data-category="character">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="character" placeholder="1girl, solo, elf warrior, blue eyes..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="character" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="character" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="character" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. CLOTHING -->
+                    <div class="card block-card" data-category="clothing">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>👗</span>
+                                <span data-i18n="prompt_builder.block_clothing">Clothing</span>
+                                <span class="block-tag-badge badge-clothing">CLOTHING</span>
+                            </div>
+                            <select class="block-select-preset" data-category="clothing">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="clothing" placeholder="white dress, leather jacket, boots..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="clothing" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="clothing" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="clothing" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- 4. EXPRESSION -->
+                    <div class="card block-card" data-category="expression">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>😊</span>
+                                <span data-i18n="prompt_builder.block_expression">Expression / Mood</span>
+                                <span class="block-tag-badge badge-expression">EXPRESSION</span>
+                            </div>
+                            <select class="block-select-preset" data-category="expression">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="expression" placeholder="gentle smile, looking at viewer, blush..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="expression" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="expression" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="expression" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- 5. SITUATION -->
+                    <div class="card block-card" data-category="situation">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>🎬</span>
+                                <span data-i18n="prompt_builder.block_situation">Situation / Action</span>
+                                <span class="block-tag-badge badge-situation">SITUATION</span>
+                            </div>
+                            <select class="block-select-preset" data-category="situation">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="situation" placeholder="sitting on bench, holding cup of coffee..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="situation" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="situation" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="situation" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- 6. LOCATION -->
+                    <div class="card block-card" data-category="location">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>🏞️</span>
+                                <span data-i18n="prompt_builder.block_location">Location / Environment</span>
+                                <span class="block-tag-badge badge-location">LOCATION</span>
+                            </div>
+                            <select class="block-select-preset" data-category="location">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="location" placeholder="cozy cafe interior, rainy city street outside..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="location" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="location" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="location" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- 7. LIGHTING -->
+                    <div class="card block-card" data-category="lighting">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>💡</span>
+                                <span data-i18n="prompt_builder.block_lighting">Lighting / Camera</span>
+                                <span class="block-tag-badge badge-lighting">LIGHTING</span>
+                            </div>
+                            <select class="block-select-preset" data-category="lighting">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="lighting" placeholder="warm golden hour lighting, soft shadows, bokeh..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="lighting" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="lighting" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="lighting" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- 8. SUFFIX -->
+                    <div class="card block-card" data-category="suffix">
+                        <div class="block-header">
+                            <div class="block-title-tag">
+                                <span>✨</span>
+                                <span data-i18n="prompt_builder.block_suffix">Suffix / Quality</span>
+                                <span class="block-tag-badge badge-suffix">SUFFIX</span>
+                            </div>
+                            <select class="block-select-preset" data-category="suffix">
+                                <option value="" data-i18n="prompt_builder.select_block_preset">Load preset...</option>
+                            </select>
+                        </div>
+                        <textarea class="block-textarea" data-category="suffix" placeholder="trending on artstation, 8k resolution, cinematic lighting..."></textarea>
+                        <div class="block-actions">
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-small btn-primary btn-save-block" data-category="suffix" data-i18n="prompt_builder.save_block_btn">💾 Save Block</button>
+                                <button class="btn btn-small btn-delete-preset" data-category="suffix" style="color: var(--danger);" data-i18n="prompt_builder.delete_block_btn">🗑️ Delete</button>
+                            </div>
+                            <button class="btn btn-small btn-clear-block" data-category="suffix" data-i18n="prompt_builder.clear_btn">🧹 Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-Time Live Combined Prompt Preview Footer -->
+                <div class="card preview-card" style="margin-top: 24px;">
+                    <div class="preview-header">
+                        <h3 style="margin:0; font-size:1.1rem;" data-i18n="prompt_builder.preview_title">Real-Time Combined Prompt</h3>
+                        <div class="stats-badge">
+                            <span id="wordCount">0</span> words | <span id="charCount">0</span> chars
+                        </div>
+                    </div>
+                    <div id="previewText" class="preview-box">Your combined prompt will appear here in real-time as you type...</div>
+                    <div class="preview-actions" style="justify-content: flex-end;">
+                        <div style="display: flex; gap: 8px;">
+                            <button id="btnCopyPrompt" class="btn btn-primary" data-i18n="prompt_builder.copy_prompt_btn">📋 Copy Prompt</button>
+                            <button id="btnSaveActive" class="btn btn-save" data-i18n="prompt_builder.save_active_btn">💾 Save Active Config to Node</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Detail Inspect & Edit Modal -->
+    <div id="detailModal" class="detail-modal-overlay" style="display: none;">
+        <div class="detail-modal-card">
+            <div class="detail-modal-header">
+                <div class="detail-modal-top-row">
+                    <h2 class="detail-modal-title" id="modalTitle">Model Title</h2>
+                    <button type="button" id="closeDetailModal" class="btn-nav icon-close-btn" title="Close">✕</button>
+                </div>
+                <div class="detail-modal-actions-row">
+                    <a id="btnViewCivitai" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-nav" data-i18n="easy_config.btn_see_on_civitai">🌐 See on CivitAI</a>
+                    <button type="button" id="btnResyncSingle" class="btn btn-nav" data-i18n="easy_config.btn_resync_checkpoint">🔄 Resync Civitai Data</button>
+                    <span class="badge-tag" id="modalAuthorBadge">👤 Author</span>
+                </div>
+                <div class="tags-list-container" id="modalTagsContainer"></div>
+            </div>
+
+            <div class="detail-modal-body">
+                <div class="info-grid">
+                    <div class="info-box"><label>Version</label><p id="infoVersion">v1.0</p></div>
+                    <div class="info-box"><label>File Name</label><p id="infoFileName">model.safetensors</p></div>
+                    <div class="info-box"><label data-i18n="easy_config.base_model_label">Base Model</label><p id="infoBaseModel">SD 1.5</p></div>
+                    <div class="info-box"><label>Size</label><p id="infoSize">2.0 GB</p></div>
+                    <div class="info-box full-width"><label>Location</label><p id="infoLocation">/models/...</p></div>
+                </div>
+
+                <div class="form-group" id="modalTriggerWordsGroup" style="margin-bottom: 20px;">
+                    <label data-i18n="lora_config.trigger_words_label">Trigger Words</label>
+                    <div class="trigger-words-list" id="modalTriggerWordsContainer">
+                        <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No trigger words</span>
+                    </div>
+                </div>
+
+                <div class="detail-tabs">
+                    <button type="button" class="tab-item active" data-tab="description" data-i18n="easy_config.tab_description">📖 Description</button>
+                    <button type="button" class="tab-item" data-tab="examples" data-i18n="easy_config.tab_examples">🖼️ Examples</button>
+                    <button type="button" class="tab-item" data-tab="config" data-i18n="easy_config.tab_config">⚙️ Config</button>
+                </div>
+
+                <div id="tabDescription" class="tab-content active">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label>Additional Notes ℹ️</label>
+                        <textarea id="modalNotesInput" rows="2" placeholder="Custom notes for this model..."></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label>CivitAI Description 📖</label>
+                        <div id="modalDescriptionContent" class="civitai-description-box">
+                            No Civitai description available.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tabExamples" class="tab-content">
+                    <div class="examples-grid" id="modalExamplesList">
+                        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px;">
+                            No example images available for this model.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tabConfig" class="tab-content">
+                    <!-- Checkpoint Specific Controls -->
+                    <div id="checkpointConfigControls">
+                        <div class="grid-3" style="margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label data-i18n="easy_config.total_steps_label">Total Steps</label>
+                                <input type="number" id="stepsInput" min="1" value="20">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="easy_config.cfg_scale_label">CFG Scale</label>
+                                <input type="number" id="cfgInput" step="0.5" value="7.0">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="easy_config.clip_skip_label">Clip Skip</label>
+                                <input type="number" id="clipSkipInput" step="1" max="-1" value="-1" placeholder="-1">
+                            </div>
+                        </div>
+
+                        <div class="grid-2" style="margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label data-i18n="easy_config.sampler_name_label">Sampler Name</label>
+                                <div class="select-box-container">
+                                    <div class="select-trigger" id="modalSamplerTrigger">euler</div>
+                                    <div class="dropdown-panel" id="modalSamplerPanel">
+                                        <div class="dropdown-search-wrapper">
+                                            <input type="text" id="modalSamplerSearch" placeholder="Search sampler...">
+                                        </div>
+                                        <div class="dropdown-items-list" id="modalSamplerList"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="easy_config.scheduler_label">Scheduler</label>
+                                <div class="select-box-container">
+                                    <div class="select-trigger" id="modalSchedulerTrigger">normal</div>
+                                    <div class="dropdown-panel" id="modalSchedulerPanel">
+                                        <div class="dropdown-search-wrapper">
+                                            <input type="text" id="modalSchedulerSearch" placeholder="Search scheduler...">
+                                        </div>
+                                        <div class="dropdown-items-list" id="modalSchedulerList"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label data-i18n="easy_config.prompt_prefix_label">Prompt Prefix</label>
+                            <textarea id="prefixPromptInput" rows="2" placeholder="masterpiece, highly detailed..."></textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label data-i18n="easy_config.prompt_suffix_label">Prompt Suffix</label>
+                            <textarea id="suffixPromptInput" rows="2" placeholder="best quality, high resolution..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- LoRA Specific Controls -->
+                    <div id="loraConfigControls" style="display: none;">
+                        <div class="grid-2" style="margin-bottom: 20px;">
+                            <div class="form-group">
+                                <label data-i18n="lora_config.weight_model_label">Model Weight</label>
+                                <input type="number" id="weightModelInput" step="0.05" value="1.0" min="-20" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="lora_config.weight_clip_label">CLIP Weight</label>
+                                <input type="number" id="weightClipInput" step="0.05" value="1.0" min="-20" max="20">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                            <h4 data-i18n="lora_config.blocks_title" style="font-size: 0.95rem; color: var(--accent); margin: 0;">Prompt Builder Blocks (7 Blocks)</h4>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label data-i18n="lora_config.block_character">👤 Character</label>
+                                <textarea id="block_character" placeholder="Character details..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="lora_config.block_clothing">👗 Clothing</label>
+                                <textarea id="block_clothing" placeholder="Outfit, costume..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="lora_config.block_no_clothing">🔞 No Clothing (NSFW)</label>
+                                <textarea id="block_no_clothing" placeholder="NSFW / nude prompt tags..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="lora_config.block_expression">😊 Expression</label>
+                                <textarea id="block_expression" placeholder="Facial expression..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="lora_group.block_situation">🎬 Situation</label>
+                                <textarea id="block_situation" placeholder="Action, pose..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="lora_config.block_location">🏰 Location</label>
+                                <textarea id="block_location" placeholder="Environment, background..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="lora_config.block_lighting">💡 Lighting</label>
+                                <textarea id="block_lighting" placeholder="Lighting, camera..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Bar inside Config Tab -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--border); flex-wrap: wrap; gap: 10px;">
+                        <button type="button" id="btnSendToComfy" class="btn btn-save" data-i18n="lora_config.send_to_comfy_btn" style="display: none;">🚀 Send to ComfyUI</button>
+                        <button type="button" id="btnSaveModalConfig" class="btn btn-save" data-i18n="easy_config.btn_save_config">💾 Save Configuration</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Global Cabinet Settings Modal -->
-    <div id="globalCabinetSettingsModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
-        <div class="card" style="max-width: 520px; width: 90%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="font-size: 1.25rem; color: white;" data-i18n="home.settings_title">⚙️ Comfy Cabinet Global Settings</h2>
-                <button type="button" id="btnCloseGlobalSettings" class="btn-nav" style="padding: 4px 10px;">✕</button>
+    <!-- Unified Preferences Modal -->
+    <div id="settingsModal" class="detail-modal-overlay" style="display: none;">
+        <div class="detail-modal-card" style="max-width: 680px; width: 90%;">
+            <div class="detail-modal-header">
+                <h2 style="font-size: 1.25rem;" data-i18n="settings.title">⚙️ Studio & General Preferences</h2>
+                <button type="button" id="closeSettingsModal" class="btn-nav" style="padding: 4px 10px;">✕</button>
             </div>
-
-            <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px;">
-                <div>
-                    <label style="margin-bottom: 2px; text-transform: none; font-size: 0.9rem; color: white;" data-i18n="settings.close_outside_label">Close Modals on Clicking Outside</label>
-                    <span style="font-size: 0.8rem; color: var(--text-muted); display: block;" data-i18n="settings.close_outside_desc">Dismiss any modal dialog across all Comfy Cabinet tools by clicking the dark background overlay.</span>
+            <div class="detail-modal-body">
+                <div class="pref-section-title">🌐 Language / Lingua</div>
+                <div class="setting-row" style="margin-bottom: 20px;">
+                    <div>
+                        <div class="setting-label">Interface Language</div>
+                        <div class="setting-desc">Switch between English and Italian.</div>
+                    </div>
+                    <div class="tri-switch" id="langSwitch">
+                        <div class="tri-option" data-lang-val="en" onclick="setLanguage('en')">English 🇬🇧</div>
+                        <div class="tri-option" data-lang-val="it" onclick="setLanguage('it')">Italiano 🇮🇹</div>
+                    </div>
                 </div>
-                <input type="checkbox" id="globalCloseOutsideCheckbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; margin-left: 12px;">
-            </div>
 
-            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-                <button type="button" id="btnSaveGlobalCabinetSettings" class="btn-save">💾 Save Settings</button>
+                <div class="pref-section-title">🎨 Theme & Color Palette</div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">Theme Mode</div>
+                        <div class="setting-desc">Select dark mode, light mode, or match system settings.</div>
+                    </div>
+                    <div class="tri-switch" id="themeSwitch">
+                        <div class="tri-option" data-value="dark" onclick="setThemePreference('dark')">🌙 Dark</div>
+                        <div class="tri-option" data-value="light" onclick="setThemePreference('light')">☀️ Light</div>
+                        <div class="tri-option active" data-value="system" onclick="setThemePreference('system')">💻 System</div>
+                    </div>
+                </div>
+
+                <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+                    <div>
+                        <div class="setting-label">Accent Color</div>
+                        <div class="setting-desc">Pick your preferred tactile accent theme.</div>
+                    </div>
+                    <div class="color-swatches-grid">
+                        <div class="color-swatch-card active" data-color-val="vermillion" onclick="setAccentColor('vermillion')">
+                            <div class="swatch-dot" style="background: linear-gradient(135deg, #f24c3d, #b91c1c);"></div>
+                            <span class="swatch-name">Vermillion</span>
+                        </div>
+                        <div class="color-swatch-card" data-color-val="electric-blue" onclick="setAccentColor('electric-blue')">
+                            <div class="swatch-dot" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);"></div>
+                            <span class="swatch-name">Electric Blue</span>
+                        </div>
+                        <div class="color-swatch-card" data-color-val="emerald" onclick="setAccentColor('emerald')">
+                            <div class="swatch-dot" style="background: linear-gradient(135deg, #059669, #047857);"></div>
+                            <span class="swatch-name">Emerald Mist</span>
+                        </div>
+                        <div class="color-swatch-card" data-color-val="amber" onclick="setAccentColor('amber')">
+                            <div class="swatch-dot" style="background: linear-gradient(135deg, #f59e0b, #b45309);"></div>
+                            <span class="swatch-name">Amber Glow</span>
+                        </div>
+                        <div class="color-swatch-card" data-color-val="purple-haze" onclick="setAccentColor('purple-haze')">
+                            <div class="swatch-dot" style="background: linear-gradient(135deg, #7c3aed, #5b21b6);"></div>
+                            <span class="swatch-name">Purple Haze</span>
+                        </div>
+                        <div class="color-swatch-card" data-color-val="monochrome" onclick="setAccentColor('monochrome')">
+                            <div class="swatch-dot" style="background: linear-gradient(135deg, #71717a, #3f3f46);"></div>
+                            <span class="swatch-name">Monochrome</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pref-section-title" style="margin-top: 24px;">🌐 CivitAI API & Domain Mode</div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label" data-i18n="lora_config.domain_mode_label">CivitAI Domain Mode</div>
+                        <div class="setting-desc">Choose between SFW (civitai.com) and NSFW (civitai.red).</div>
+                    </div>
+                    <div class="tri-switch">
+                        <div class="tri-option civitai-domain-btn active" data-domain="civitai.com" onclick="setCivitaiDomainMode('civitai.com')">🟢 SFW (civitai.com)</div>
+                        <div class="tri-option civitai-domain-btn" data-domain="civitai.red" onclick="setCivitaiDomainMode('civitai.red')">🔴 NSFW (civitai.red)</div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 14px; margin-bottom: 14px;">
+                    <label data-i18n="lora_config.civitai_api_key_label">CivitAI API Key (Optional)</label>
+                    <input type="password" id="civitaiApiKeyInput" placeholder="Paste your CivitAI API Key..." onchange="saveCivitaiApiKey(this.value)">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">
+                    <button type="button" class="btn btn-small" onclick="testCivitaiConnection()" data-i18n="lora_config.btn_test_civitai">🧪 Test Connection & API Key</button>
+                </div>
+
+                <div class="pref-section-title" style="margin-top: 24px;">⚙️ Global Defaults</div>
+                <div class="grid-3" style="margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label data-i18n="settings.default_steps_label">Default Steps</label>
+                        <input type="number" id="globalSteps" value="20" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="settings.default_cfg_label">Default CFG</label>
+                        <input type="number" id="globalCfg" value="7.0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="settings.default_clip_skip_label">Default Clip Skip</label>
+                        <input type="number" id="globalClipSkip" value="-1" max="-1">
+                    </div>
+                </div>
+
+                <div class="setting-row" style="margin-bottom: 20px;">
+                    <div>
+                        <div class="setting-label" data-i18n="settings.close_outside_label">Close Modals on Backdrop Click</div>
+                        <div class="setting-desc" data-i18n="settings.close_outside_desc">Dismiss modal dialogs by clicking the background overlay.</div>
+                    </div>
+                    <input type="checkbox" id="gCloseOutsideCheckbox" checked onchange="toggleBackdropClose(this)">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--border);">
+                    <button type="button" id="saveGlobalBtn" class="btn btn-save" data-i18n="settings.save_btn">💾 Save Global Settings</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const modal = document.getElementById("globalCabinetSettingsModal");
-            const openBtn = document.getElementById("btnOpenGlobalSettings");
-            const closeBtn = document.getElementById("btnCloseGlobalSettings");
-            const checkbox = document.getElementById("globalCloseOutsideCheckbox");
-            const saveBtn = document.getElementById("btnSaveGlobalCabinetSettings");
+    <!-- Save Block Preset Modal -->
+    <div id="saveBlockModal" class="detail-modal-overlay" style="display: none;">
+        <div class="detail-modal-card" style="max-width: 480px; width: 90%;">
+            <div class="detail-modal-header">
+                <h3 style="margin:0;" data-i18n="prompt_builder.modal_save_block_title">Save Block Preset</h3>
+            </div>
+            <div class="detail-modal-body">
+                <div class="form-group">
+                    <label data-i18n="prompt_builder.modal_block_title_label">Preset Name</label>
+                    <input type="text" id="modalBlockTitleInput" placeholder="e.g., Cyberpunk Warrior Girl" data-i18n-placeholder="prompt_builder.modal_block_title_placeholder">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" id="modalBlockCancel" class="btn btn-small" data-i18n="prompt_builder.btn_cancel">Cancel</button>
+                    <button type="button" id="modalBlockConfirm" class="btn btn-small btn-primary" data-i18n="prompt_builder.btn_confirm">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            if (checkbox) {
-                checkbox.checked = window.ComfyCabinetSettings.getCloseModalOnClickOutside();
-            }
-
-            if (openBtn && modal) {
-                openBtn.addEventListener("click", () => {
-                    modal.style.display = "flex";
-                });
-            }
-
-            if (closeBtn && modal) {
-                closeBtn.addEventListener("click", () => {
-                    modal.style.display = "none";
-                });
-            }
-
-            if (saveBtn) {
-                saveBtn.addEventListener("click", () => {
-                    if (checkbox) {
-                        window.ComfyCabinetSettings.setCloseModalOnClickOutside(checkbox.checked);
-                    }
-                    if (modal) modal.style.display = "none";
-                    if (window.Toast) window.Toast.success("Global settings saved!");
-                });
-            }
-        });
-    </script>
+    <!-- Save Scene Preset Modal -->
+    <div id="saveSceneModal" class="detail-modal-overlay" style="display: none;">
+        <div class="detail-modal-card" style="max-width: 480px; width: 90%;">
+            <div class="detail-modal-header">
+                <h3 style="margin:0;" data-i18n="prompt_builder.modal_save_scene_title">Save Scene Preset</h3>
+            </div>
+            <div class="detail-modal-body">
+                <div class="form-group">
+                    <label data-i18n="prompt_builder.modal_scene_name_label">Scene Name</label>
+                    <input type="text" id="modalSceneNameInput" placeholder="e.g., Dark Forest Scene" data-i18n-placeholder="prompt_builder.modal_scene_name_placeholder">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                    <button type="button" id="modalSceneCancel" class="btn btn-small" data-i18n="prompt_builder.btn_cancel">Cancel</button>
+                    <button type="button" id="modalSceneConfirm" class="btn btn-small btn-primary" data-i18n="prompt_builder.btn_confirm">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

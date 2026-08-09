@@ -2,7 +2,7 @@
     window.ComfyCabinetSettings = {
         getCloseModalOnClickOutside() {
             try {
-                return localStorage.getItem('comfy-cabinet-close-outside') === 'true';
+                return localStorage.getItem('comfy-cabinet-backdrop-close') === 'true';
             } catch (e) {
                 return false;
             }
@@ -10,7 +10,7 @@
         setCloseModalOnClickOutside(enabled) {
             const valStr = enabled ? 'true' : 'false';
             try {
-                localStorage.setItem('comfy-cabinet-close-outside', valStr);
+                localStorage.setItem('comfy-cabinet-backdrop-close', valStr);
             } catch (e) { }
 
             // Mirror to backend global settings if available

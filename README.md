@@ -4,6 +4,8 @@ Welcome to the **Comfy Cabinet**, a boutique virtual exhibit of handcrafted Comf
 
 Current Exhibition: 🎨 **Easy Checkpoint Config Loader**, 🧩 **Easy Prompt Builder**, & 💊 **Easy LoRA Config Loader**
 
+**ATTENTION**: v0.2.0 is out for testing in the real world as it's a Release Candidate. I've fully reworked the Web UI and introduced many new functionalities. Please read the [Changelog](CHANGELOG.md) for more information.
+
 ---
 
 ## 🎨 Easy Checkpoint Config

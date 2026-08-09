@@ -1,6 +1,8 @@
 let allLoraItems = [];
+let activeTypeFilter = "ALL";
 let activeBaseModelFilter = "ALL";
-let activeTagFilter = "ALL";
+let selectedAuthors = [];
+let selectedTags = [];
 let activeSearchQuery = "";
 let activeSortOrder = "AZ";
 let currentDetailItem = null;
@@ -28,7 +30,7 @@ const fields = {
 document.addEventListener("DOMContentLoaded", () => {
     fields.search = document.getElementById("loraSearchInput");
     fields.apiKeyInput = document.getElementById("civitaiApiKeyInput");
-    fields.sortSelect = document.getElementById("sortSelect");
+    fields.sortSelect = document.getElementById("sortSelectLora") || document.getElementById("sortSelect");
     fields.modalNotes = document.getElementById("modalNotesInput");
     fields.weightModel = document.getElementById("weightModelInput");
     fields.weightClip = document.getElementById("weightClipInput");
@@ -78,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const sendBtn = document.getElementById("btnSendToComfy");
         if (sendBtn) sendBtn.addEventListener("click", sendToComfyUI);
 
-        const resyncSingleBtn = document.getElementById("btnResyncSingleLora");
+        const resyncSingleBtn = document.getElementById("btnResyncSingle") || document.getElementById("btnResyncSingleLora") || document.getElementById("btnResyncSingleCheckpoint");
         if (resyncSingleBtn) resyncSingleBtn.addEventListener("click", resyncSingleLora);
 
         // Settings Modal Listeners
@@ -164,6 +166,8 @@ function setupSearchInput() {
     if (!fields.search) return;
     fields.search.addEventListener("input", (e) => {
         activeSearchQuery = e.target.value.toLowerCase().trim();
+        updateAllFilterBarsAndDropdowns();
+        renderActiveFilterChips();
         renderLoraGrid();
     });
 }
@@ -206,12 +210,17 @@ async function loadAllLoras() {
             currentDomainMode = globals.domain_mode;
             const sfwBtn = document.getElementById("domainSfwBtn");
             const nsfwBtn = document.getElementById("domainNsfwBtn");
-            if (globals.domain_mode === "civitai.red") {
-                nsfwBtn.classList.add("active", "nsfw");
-                sfwBtn.classList.remove("active", "sfw");
-            } else {
-                sfwBtn.classList.add("active", "sfw");
-                nsfwBtn.classList.remove("active", "sfw");
+            if (sfwBtn && nsfwBtn) {
+                if (globals.domain_mode === "civitai.red") {
+                    nsfwBtn.classList.add("active", "nsfw");
+                    sfwBtn.classList.remove("active", "sfw");
+                } else {
+                    sfwBtn.classList.add("active", "sfw");
+                    nsfwBtn.classList.remove("active", "sfw");
+                }
+            }
+            if (typeof updateCivitaiDomainUI === "function") {
+                updateCivitaiDomainUI(globals.domain_mode);
             }
         }
 
@@ -226,38 +235,173 @@ async function loadAllLoras() {
             fields.closeOutsideCheckbox.checked = closeModalOnClickOutside;
         }
 
+        populateTypeFilterBar();
         populateBaseModelFilterBar();
-        populateAuthorFilterBar();
-        populateTagsFilterBar();
+        populateAuthorFilterDropdown();
+        updateAllFilterBarsAndDropdowns();
+        renderActiveFilterChips();
         renderLoraGrid();
     } catch (err) {
         console.error("[EasyLoraConfig] Error loading all loras:", err);
     }
 }
 
-let activeAuthorFilter = "ALL";
+function getLoraType(item) {
+    const rawType = item.civitai_metadata?.type || item.civitai_metadata?.model?.type || "";
+    if (rawType && rawType !== "LORA" && rawType !== "LoCon") {
+        const typeCap = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+        if (["Character", "Style", "Concept", "Clothing", "Pose", "Background", "Action", "Objects", "Anime"].includes(typeCap)) {
+            return typeCap;
+        }
+    }
+
+    const tagsArr = (item.tags || []).map(t => t.toLowerCase());
+    const textCorpus = ((item.tags || []).join(" ") + " " + (item.trigger_words || "") + " " + (item.lora_name || "")).toLowerCase();
+
+    if (tagsArr.includes("character") || textCorpus.includes("1girl") || textCorpus.includes("1boy") || textCorpus.includes("character") || textCorpus.includes("woman") || textCorpus.includes("man")) return "Character";
+    if (tagsArr.includes("style") || textCorpus.includes("style") || textCorpus.includes("painterly") || textCorpus.includes("artstyle") || textCorpus.includes("illustration")) return "Style";
+    if (tagsArr.includes("clothing") || textCorpus.includes("clothing") || textCorpus.includes("dress") || textCorpus.includes("outfit") || textCorpus.includes("costume") || textCorpus.includes("suit")) return "Clothing";
+    if (tagsArr.includes("pose") || textCorpus.includes("pose") || textCorpus.includes("posture") || textCorpus.includes("sitting") || textCorpus.includes("standing")) return "Pose";
+    if (tagsArr.includes("background") || textCorpus.includes("background") || textCorpus.includes("landscape") || textCorpus.includes("scenery") || textCorpus.includes("environment")) return "Background";
+    if (tagsArr.includes("action") || textCorpus.includes("action") || textCorpus.includes("fighting") || textCorpus.includes("motion")) return "Action";
+    if (tagsArr.includes("objects") || textCorpus.includes("object") || textCorpus.includes("vehicle") || textCorpus.includes("weapon")) return "Objects";
+    if (tagsArr.includes("anime") || textCorpus.includes("anime") || textCorpus.includes("manga")) return "Anime";
+    if (tagsArr.includes("concept") || textCorpus.includes("concept") || textCorpus.includes("effect")) return "Concept";
+
+    return "Other";
+}
+
+function getFilteredSubset(excludeCategory = "") {
+    return allLoraItems.filter(item => {
+        if (excludeCategory !== "SEARCH" && activeSearchQuery) {
+            const nameMatch = item.lora_name.toLowerCase().includes(activeSearchQuery);
+            const authorMatch = (item.author || "").toLowerCase().includes(activeSearchQuery);
+            const baseMatch = (item.base_model || "").toLowerCase().includes(activeSearchQuery);
+            const tagMatch = item.tags && item.tags.some(t => t.toLowerCase().includes(activeSearchQuery));
+            const triggerMatch = (item.trigger_words || "").toLowerCase().includes(activeSearchQuery);
+            if (!nameMatch && !authorMatch && !baseMatch && !tagMatch && !triggerMatch) return false;
+        }
+
+        if (excludeCategory !== "TYPE" && activeTypeFilter !== "ALL") {
+            if (getLoraType(item) !== activeTypeFilter) return false;
+        }
+
+        if (excludeCategory !== "BASE" && activeBaseModelFilter !== "ALL") {
+            const bm = (item.base_model && item.base_model.trim()) ? item.base_model.trim() : "Other / Unspecified";
+            if (bm !== activeBaseModelFilter) return false;
+        }
+
+        if (excludeCategory !== "AUTHORS" && selectedAuthors.length > 0) {
+            const author = (item.author && item.author.trim() && item.author.trim() !== "Unknown")
+                ? item.author.trim()
+                : "Unknown / Unspecified";
+            if (!selectedAuthors.includes(author)) return false;
+        }
+
+        if (excludeCategory !== "TAGS" && selectedTags.length > 0) {
+            if (!item.tags || !Array.isArray(item.tags)) return false;
+            if (!item.tags.some(t => selectedTags.includes(t.trim()))) return false;
+        }
+
+        return true;
+    });
+}
+
+function updateAllFilterBarsAndDropdowns() {
+    populateTypeFilterBar();
+    populateBaseModelFilterBar();
+    populateAuthorFilterDropdown();
+    populateTagFilterDropdown();
+}
+
+function populateTypeFilterBar() {
+    const bar = document.getElementById("typeFilterBar");
+    if (!bar) return;
+
+    const subset = getFilteredSubset("TYPE");
+    const counts = {};
+    subset.forEach(item => {
+        const type = getLoraType(item);
+        counts[type] = (counts[type] || 0) + 1;
+    });
+
+    const typesList = [
+        { id: "ALL", label: "All Types", icon: "" },
+        { id: "Character", label: "Character", icon: "👤 " },
+        { id: "Style", label: "Style", icon: "🎨 " },
+        { id: "Concept", label: "Concept", icon: "💡 " },
+        { id: "Clothing", label: "Clothing", icon: "👗 " },
+        { id: "Pose", label: "Pose", icon: "🤸 " },
+        { id: "Background", label: "Background", icon: "🏞️ " },
+        { id: "Action", label: "Action", icon: "🎬 " },
+        { id: "Objects", label: "Objects", icon: "📦 " },
+        { id: "Anime", label: "Anime", icon: "🌸 " }
+    ];
+
+    bar.innerHTML = "";
+    typesList.forEach(t => {
+        const count = t.id === "ALL" ? subset.length : (counts[t.id] || 0);
+        const pill = document.createElement("span");
+        let className = "tag-filter-pill";
+        if (activeTypeFilter === t.id) {
+            className += " active";
+        } else if (count === 0) {
+            className += " disabled";
+        }
+        pill.className = className;
+        pill.setAttribute("data-type", t.id);
+        pill.textContent = `${t.icon}${t.label} (${count})`;
+        pill.addEventListener("click", () => {
+            if (pill.classList.contains("disabled")) return;
+            bar.querySelectorAll(".tag-filter-pill").forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+            activeTypeFilter = t.id;
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
+            renderLoraGrid();
+        });
+        bar.appendChild(pill);
+    });
+}
 
 function populateBaseModelFilterBar() {
     const bar = document.getElementById("baseModelFilterBar");
     if (!bar) return;
 
+    const subset = getFilteredSubset("BASE");
     const counts = {};
-    allLoraItems.forEach(item => {
+    subset.forEach(item => {
         const bm = (item.base_model && item.base_model.trim()) ? item.base_model.trim() : "Other / Unspecified";
         counts[bm] = (counts[bm] || 0) + 1;
     });
 
-    bar.innerHTML = `<span class="tag-filter-pill ${activeBaseModelFilter === "ALL" ? "active" : ""}" data-base="ALL">All Base Models (${allLoraItems.length})</span>`;
+    const allBaseModels = new Set();
+    allLoraItems.forEach(item => {
+        const bm = (item.base_model && item.base_model.trim()) ? item.base_model.trim() : "Other / Unspecified";
+        allBaseModels.add(bm);
+    });
 
-    Object.keys(counts).sort().forEach(baseModel => {
+    bar.innerHTML = `<span class="tag-filter-pill ${activeBaseModelFilter === "ALL" ? "active" : ""}" data-base="ALL">All Base Models (${subset.length})</span>`;
+
+    Array.from(allBaseModels).sort().forEach(baseModel => {
+        const count = counts[baseModel] || 0;
         const pill = document.createElement("span");
-        pill.className = `tag-filter-pill ${activeBaseModelFilter === baseModel ? "active" : ""}`;
+        let className = "tag-filter-pill";
+        if (activeBaseModelFilter === baseModel) {
+            className += " active";
+        } else if (count === 0) {
+            className += " disabled";
+        }
+        pill.className = className;
         pill.setAttribute("data-base", baseModel);
-        pill.textContent = `${baseModel} (${counts[baseModel]})`;
+        pill.textContent = `${baseModel} (${count})`;
         pill.addEventListener("click", () => {
+            if (pill.classList.contains("disabled")) return;
             bar.querySelectorAll(".tag-filter-pill").forEach(p => p.classList.remove("active"));
             pill.classList.add("active");
             activeBaseModelFilter = baseModel;
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
             renderLoraGrid();
         });
         bar.appendChild(pill);
@@ -269,59 +413,129 @@ function populateBaseModelFilterBar() {
             bar.querySelectorAll(".tag-filter-pill").forEach(p => p.classList.remove("active"));
             firstPill.classList.add("active");
             activeBaseModelFilter = "ALL";
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
             renderLoraGrid();
         });
     }
 }
 
-function populateAuthorFilterBar() {
-    const bar = document.getElementById("authorFilterBar");
-    if (!bar) return;
+function populateAuthorFilterDropdown() {
+    const trigger = document.getElementById("authorFilterTrigger");
+    const panel = document.getElementById("authorFilterPanel");
+    const searchInput = document.getElementById("authorFilterSearch");
+    const list = document.getElementById("authorFilterList");
 
+    if (!trigger || !panel || !list) return;
+
+    if (!trigger.dataset.bound) {
+        trigger.dataset.bound = "true";
+        trigger.onclick = (e) => {
+            e.stopPropagation();
+            const isVisible = panel.style.display === "block";
+            panel.style.display = isVisible ? "none" : "block";
+            if (!isVisible && searchInput) searchInput.focus();
+        };
+
+        document.addEventListener("click", (e) => {
+            if (!panel.contains(e.target) && e.target !== trigger) {
+                panel.style.display = "none";
+            }
+        });
+    }
+
+    const subset = getFilteredSubset("AUTHORS");
     const counts = {};
-    allLoraItems.forEach(item => {
+    subset.forEach(item => {
         const author = (item.author && item.author.trim() && item.author.trim() !== "Unknown")
             ? item.author.trim()
             : "Unknown / Unspecified";
         counts[author] = (counts[author] || 0) + 1;
     });
 
-    const isIt = (window.i18n && window.i18n.currentLang) === "it";
-    const allText = isIt ? `Tutti gli Autori (${allLoraItems.length})` : `All Authors (${allLoraItems.length})`;
-
-    bar.innerHTML = `<span class="tag-filter-pill ${activeAuthorFilter === "ALL" ? "active" : ""}" data-author="ALL">${allText}</span>`;
-
-    Object.keys(counts).sort().forEach(author => {
-        const pill = document.createElement("span");
-        pill.className = `tag-filter-pill ${activeAuthorFilter === author ? "active" : ""}`;
-        pill.setAttribute("data-author", author);
-        pill.textContent = `👤 ${author} (${counts[author]})`;
-        pill.addEventListener("click", () => {
-            bar.querySelectorAll(".tag-filter-pill").forEach(p => p.classList.remove("active"));
-            pill.classList.add("active");
-            activeAuthorFilter = author;
-            renderLoraGrid();
-        });
-        bar.appendChild(pill);
+    const allAuthors = new Set();
+    allLoraItems.forEach(item => {
+        const author = (item.author && item.author.trim() && item.author.trim() !== "Unknown")
+            ? item.author.trim()
+            : "Unknown / Unspecified";
+        allAuthors.add(author);
     });
 
-    const firstPill = bar.querySelector('[data-author="ALL"]');
-    if (firstPill) {
-        firstPill.addEventListener("click", () => {
-            bar.querySelectorAll(".tag-filter-pill").forEach(p => p.classList.remove("active"));
-            firstPill.classList.add("active");
-            activeAuthorFilter = "ALL";
-            renderLoraGrid();
+    const renderList = (filterText = "") => {
+        list.innerHTML = "";
+        const sortedAuthors = Array.from(allAuthors).sort((a, b) => {
+            const countA = counts[a] || 0;
+            const countB = counts[b] || 0;
+            if (countA !== countB) return countB - countA;
+            return a.localeCompare(b);
         });
+
+        const filtered = sortedAuthors.filter(a => a.toLowerCase().includes(filterText.toLowerCase()));
+
+        if (filtered.length === 0) {
+            list.innerHTML = `<div class="dropdown-item no-results">No authors found</div>`;
+            return;
+        }
+
+        filtered.forEach(author => {
+            const count = counts[author] || 0;
+            const isSelected = selectedAuthors.includes(author);
+            const itemEl = document.createElement("div");
+            let cls = "dropdown-item";
+            if (isSelected) cls += " active-item";
+            if (count === 0 && !isSelected) cls += " disabled-item";
+            itemEl.className = cls;
+            itemEl.textContent = `👤 ${author} (${count})`;
+            itemEl.onclick = (e) => {
+                e.stopPropagation();
+                if (count === 0 && !isSelected) return;
+                if (isSelected) {
+                    selectedAuthors = selectedAuthors.filter(a => a !== author);
+                } else {
+                    selectedAuthors.push(author);
+                }
+                updateAllFilterBarsAndDropdowns();
+                renderActiveFilterChips();
+                renderLoraGrid();
+            };
+            list.appendChild(itemEl);
+        });
+    };
+
+    renderList(searchInput ? searchInput.value : "");
+
+    if (searchInput) {
+        searchInput.oninput = () => renderList(searchInput.value);
     }
 }
 
-function populateTagsFilterBar() {
-    const bar = document.getElementById("tagsFilterBar");
-    if (!bar) return;
+function populateTagFilterDropdown() {
+    const trigger = document.getElementById("tagFilterTrigger");
+    const panel = document.getElementById("tagFilterPanel");
+    const searchInput = document.getElementById("tagFilterSearch");
+    const list = document.getElementById("tagFilterList");
 
+    if (!trigger || !panel || !list) return;
+
+    if (!trigger.dataset.bound) {
+        trigger.dataset.bound = "true";
+        trigger.onclick = (e) => {
+            e.stopPropagation();
+            const isVisible = panel.style.display === "block";
+            panel.style.display = isVisible ? "none" : "block";
+            if (!isVisible && searchInput) searchInput.focus();
+        };
+
+        document.addEventListener("click", (e) => {
+            if (!panel.contains(e.target) && e.target !== trigger) {
+                panel.style.display = "none";
+            }
+        });
+    }
+
+    const subset = getFilteredSubset("TAGS");
     const tagCounts = {};
-    allLoraItems.forEach(item => {
+    subset.forEach(item => {
         if (item.tags && Array.isArray(item.tags)) {
             item.tags.forEach(t => {
                 const cleanTag = t.trim();
@@ -332,31 +546,147 @@ function populateTagsFilterBar() {
         }
     });
 
-    bar.innerHTML = `<span class="tag-filter-pill ${activeTagFilter === "ALL" ? "active" : ""}" data-tag="ALL">All Tags</span>`;
-
-    Object.keys(tagCounts).sort().forEach(tag => {
-        const pill = document.createElement("span");
-        pill.className = `tag-filter-pill ${activeTagFilter === tag ? "active" : ""}`;
-        pill.setAttribute("data-tag", tag);
-        pill.textContent = `${tag} (${tagCounts[tag]})`;
-        pill.addEventListener("click", () => {
-            bar.querySelectorAll(".tag-filter-pill").forEach(p => p.classList.remove("active"));
-            pill.classList.add("active");
-            activeTagFilter = tag;
-            renderLoraGrid();
-        });
-        bar.appendChild(pill);
+    const allTags = new Set();
+    allLoraItems.forEach(item => {
+        if (item.tags && Array.isArray(item.tags)) {
+            item.tags.forEach(t => {
+                const cleanTag = t.trim();
+                if (cleanTag) allTags.add(cleanTag);
+            });
+        }
     });
 
-    const firstPill = bar.querySelector('[data-tag="ALL"]');
-    if (firstPill) {
-        firstPill.addEventListener("click", () => {
-            bar.querySelectorAll(".tag-filter-pill").forEach(p => p.classList.remove("active"));
-            firstPill.classList.add("active");
-            activeTagFilter = "ALL";
-            renderLoraGrid();
+    const renderList = (filterText = "") => {
+        list.innerHTML = "";
+        const sortedTags = Array.from(allTags).sort((a, b) => {
+            const countA = tagCounts[a] || 0;
+            const countB = tagCounts[b] || 0;
+            if (countA !== countB) return countB - countA;
+            return a.localeCompare(b);
         });
+
+        const filtered = sortedTags.filter(t => t.toLowerCase().includes(filterText.toLowerCase()));
+
+        if (filtered.length === 0) {
+            list.innerHTML = `<div class="dropdown-item no-results">No tags found</div>`;
+            return;
+        }
+
+        filtered.forEach(tag => {
+            const count = tagCounts[tag] || 0;
+            const isSelected = selectedTags.includes(tag);
+            const itemEl = document.createElement("div");
+            let cls = "dropdown-item";
+            if (isSelected) cls += " active-item";
+            if (count === 0 && !isSelected) cls += " disabled-item";
+            itemEl.className = cls;
+            itemEl.textContent = `🏷️ ${tag} (${count})`;
+            itemEl.onclick = (e) => {
+                e.stopPropagation();
+                if (count === 0 && !isSelected) return;
+                if (isSelected) {
+                    selectedTags = selectedTags.filter(t => t !== tag);
+                } else {
+                    selectedTags.push(tag);
+                }
+                updateAllFilterBarsAndDropdowns();
+                renderActiveFilterChips();
+                renderLoraGrid();
+            };
+            list.appendChild(itemEl);
+        });
+    };
+
+    renderList(searchInput ? searchInput.value : "");
+
+    if (searchInput) {
+        searchInput.oninput = () => renderList(searchInput.value);
     }
+}
+
+function renderActiveFilterChips() {
+    const summaryRow = document.getElementById("activeFiltersSummaryRowLora") || document.getElementById("activeFiltersSummaryRow");
+    const container = document.getElementById("activeFilterChipsContainerLora") || document.getElementById("activeFilterChipsContainer");
+    if (!container || !summaryRow) return;
+
+    container.innerHTML = `<span style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Active Filters:</span>`;
+
+    let activeCount = 0;
+
+    if (activeTypeFilter !== "ALL") {
+        activeCount++;
+        const chip = document.createElement("span");
+        chip.className = "active-chip";
+        chip.innerHTML = `<span>Type: ${escapeHtml(activeTypeFilter)}</span><span class="chip-remove">✕</span>`;
+        chip.querySelector(".chip-remove").onclick = () => {
+            activeTypeFilter = "ALL";
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
+            renderLoraGrid();
+        };
+        container.appendChild(chip);
+    }
+
+    if (activeBaseModelFilter !== "ALL") {
+        activeCount++;
+        const chip = document.createElement("span");
+        chip.className = "active-chip";
+        chip.innerHTML = `<span>Base: ${escapeHtml(activeBaseModelFilter)}</span><span class="chip-remove">✕</span>`;
+        chip.querySelector(".chip-remove").onclick = () => {
+            activeBaseModelFilter = "ALL";
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
+            renderLoraGrid();
+        };
+        container.appendChild(chip);
+    }
+
+    selectedAuthors.forEach(author => {
+        activeCount++;
+        const chip = document.createElement("span");
+        chip.className = "active-chip";
+        chip.innerHTML = `<span>👤 ${escapeHtml(author)}</span><span class="chip-remove">✕</span>`;
+        chip.querySelector(".chip-remove").onclick = () => {
+            selectedAuthors = selectedAuthors.filter(a => a !== author);
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
+            renderLoraGrid();
+        };
+        container.appendChild(chip);
+    });
+
+    selectedTags.forEach(tag => {
+        activeCount++;
+        const chip = document.createElement("span");
+        chip.className = "active-chip";
+        chip.innerHTML = `<span>🏷️ ${escapeHtml(tag)}</span><span class="chip-remove">✕</span>`;
+        chip.querySelector(".chip-remove").onclick = () => {
+            selectedTags = selectedTags.filter(t => t !== tag);
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
+            renderLoraGrid();
+        };
+        container.appendChild(chip);
+    });
+
+    if (activeSearchQuery) {
+        activeCount++;
+        const chip = document.createElement("span");
+        chip.className = "active-chip";
+        chip.innerHTML = `<span>🔍 "${escapeHtml(activeSearchQuery)}"</span><span class="chip-remove">✕</span>`;
+        chip.querySelector(".chip-remove").onclick = () => {
+            activeSearchQuery = "";
+            const searchInput = document.getElementById("loraSearchInput");
+            if (searchInput) searchInput.value = "";
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
+            renderLoraGrid();
+        };
+        container.appendChild(chip);
+    }
+
+    summaryRow.style.display = activeCount > 0 ? "flex" : "none";
+    updateActiveFiltersBadge(activeCount);
 }
 
 function sortLoraItems(items) {
@@ -373,14 +703,31 @@ function sortLoraItems(items) {
 }
 
 function setupCollapsibleFilters() {
-    const toggleHeader = document.getElementById("filtersToggleHeader");
-    const toggleBtn = document.getElementById("btnToggleFilters");
-    const container = document.getElementById("filtersCollapseContainer");
-    const toggleText = document.getElementById("toggleFiltersBtnText");
+    const toggleHeader = document.getElementById("filtersToggleHeaderLora") || document.getElementById("filtersToggleHeader");
+    const toggleBtn = document.getElementById("btnToggleFiltersLora") || document.getElementById("btnToggleFilters");
+    const container = document.getElementById("filtersCollapseContainerLora") || document.getElementById("filtersCollapseContainer");
+    const toggleText = document.getElementById("toggleFiltersBtnTextLora") || document.getElementById("toggleFiltersBtnText");
+    const clearAllBtn = document.getElementById("btnClearAllFiltersLora") || document.getElementById("btnClearAllFilters");
 
     if (!container) return;
 
-    let isCollapsed = localStorage.getItem("lora_filters_collapsed") === "true";
+    if (clearAllBtn) {
+        clearAllBtn.onclick = () => {
+            activeTypeFilter = "ALL";
+            activeBaseModelFilter = "ALL";
+            selectedAuthors = [];
+            selectedTags = [];
+            activeSearchQuery = "";
+            const searchInput = document.getElementById("loraSearchInput");
+            if (searchInput) searchInput.value = "";
+
+            updateAllFilterBarsAndDropdowns();
+            renderActiveFilterChips();
+            renderLoraGrid();
+        };
+    }
+
+    let isCollapsed = localStorage.getItem("lora_filters_collapsed") !== "false";
 
     const updateFilterPanelState = () => {
         const isIt = (window.i18n && window.i18n.currentLang) === "it";
@@ -402,24 +749,18 @@ function setupCollapsibleFilters() {
     };
 
     if (toggleHeader) toggleHeader.addEventListener("click", (e) => {
-        if (e.target.closest("#btnToggleFilters")) return;
+        if (e.target.closest("#btnToggleFiltersLora") || e.target.closest("#btnToggleFilters")) return;
         toggle();
     });
     if (toggleBtn) toggleBtn.addEventListener("click", toggle);
 }
 
-function updateActiveFiltersBadge() {
-    const badge = document.getElementById("activeFiltersBadge");
+function updateActiveFiltersBadge(count = 0) {
+    const badge = document.getElementById("activeFiltersBadgeLora") || document.getElementById("activeFiltersBadge");
     if (!badge) return;
 
-    let count = 0;
-    if (activeBaseModelFilter && activeBaseModelFilter !== "ALL") count++;
-    if (activeAuthorFilter && activeAuthorFilter !== "ALL") count++;
-    if (activeTagFilter && activeTagFilter !== "ALL") count++;
-    if (activeSearchQuery) count++;
-
     if (count > 0) {
-        badge.textContent = `${count} ${count === 1 ? 'Active' : 'Active'}`;
+        badge.textContent = `${count} Active`;
         badge.style.display = "inline-block";
     } else {
         badge.style.display = "none";
@@ -430,9 +771,15 @@ function renderLoraGrid() {
     const grid = document.getElementById("loraGrid");
     if (!grid) return;
 
-    updateActiveFiltersBadge();
-
     let filtered = allLoraItems;
+
+    // Filter by LoRA Type
+    if (activeTypeFilter !== "ALL") {
+        filtered = filtered.filter(item => {
+            const itemType = getLoraType(item);
+            return itemType === activeTypeFilter;
+        });
+    }
 
     // Filter by Base Model Architecture
     if (activeBaseModelFilter !== "ALL") {
@@ -442,19 +789,22 @@ function renderLoraGrid() {
         });
     }
 
-    // Filter by Author
-    if (activeAuthorFilter !== "ALL") {
+    // Filter by Selected Authors
+    if (selectedAuthors.length > 0) {
         filtered = filtered.filter(item => {
             const author = (item.author && item.author.trim() && item.author.trim() !== "Unknown")
                 ? item.author.trim()
                 : "Unknown / Unspecified";
-            return author === activeAuthorFilter;
+            return selectedAuthors.includes(author);
         });
     }
 
-    // Filter by Tag
-    if (activeTagFilter !== "ALL") {
-        filtered = filtered.filter(item => item.tags && item.tags.includes(activeTagFilter));
+    // Filter by Selected Tags
+    if (selectedTags.length > 0) {
+        filtered = filtered.filter(item => {
+            if (!item.tags || !Array.isArray(item.tags)) return false;
+            return item.tags.some(t => selectedTags.includes(t.trim()));
+        });
     }
 
     // Filter by Search Query
@@ -534,9 +884,6 @@ function renderLoraGrid() {
         overlay.innerHTML = `
             <div class="lora-card-top">
                 <span class="lora-card-tag">${escapeHtml(baseModel)}</span>
-                <div class="lora-card-actions">
-                    <button class="icon-btn" title="Select LoRA" onclick="event.stopPropagation(); openDetailModalByName('${escapeHtml(item.lora_name)}');">⚙️</button>
-                </div>
             </div>
             <div class="lora-card-bottom">
                 <div class="lora-card-title" title="${escapeHtml(displayTitle)}">${escapeHtml(displayTitle)}</div>
@@ -553,6 +900,13 @@ function renderLoraGrid() {
     });
 }
 
+window.openDetailModalByName = function (loraName) {
+    const item = allLoraItems.find(i => i.lora_name === loraName || i.lora_name.endsWith(loraName));
+    if (item) {
+        openDetailModal(item);
+    }
+};
+
 function openDetailModalByName(loraName) {
     const item = allLoraItems.find(i => i.lora_name === loraName);
     if (item) openDetailModal(item);
@@ -568,6 +922,14 @@ function openDetailModal(item) {
 
     document.getElementById("modalTitle").textContent = displayTitle;
     document.getElementById("modalAuthorBadge").textContent = (authorVal && authorVal !== "Unknown") ? `👤 ${authorVal}` : "👤 Unknown Author";
+
+    const triggerWordsGroup = document.getElementById("modalTriggerWordsGroup");
+    if (triggerWordsGroup) triggerWordsGroup.style.display = "block";
+
+    const ckptControls = document.getElementById("checkpointConfigControls");
+    const loraControls = document.getElementById("loraConfigControls");
+    if (ckptControls) ckptControls.style.display = "none";
+    if (loraControls) loraControls.style.display = "block";
 
     const civBtn = document.getElementById("btnViewCivitai");
     if (civBtn) {
@@ -637,11 +999,20 @@ function openDetailModal(item) {
     }
 
     // Info grid matching Screenshot 1
-    document.getElementById("infoVersion").textContent = item.civitai_metadata?.versionName || "v1.0";
-    document.getElementById("infoFileName").textContent = item.lora_name.split("/").pop().split("\\").pop();
-    document.getElementById("infoLocation").textContent = item.relative_path || item.lora_name;
-    document.getElementById("infoBaseModel").textContent = item.base_model || "Unknown";
-    document.getElementById("infoSize").textContent = item.file_size || "Unknown";
+    const elVer = document.getElementById("infoVersion");
+    if (elVer) elVer.textContent = item.civitai_metadata?.versionName || "v1.0";
+
+    const elFile = document.getElementById("infoFileName");
+    if (elFile) elFile.textContent = item.lora_name.split("/").pop().split("\\").pop();
+
+    const elLoc = document.getElementById("infoLocation");
+    if (elLoc) elLoc.textContent = item.relative_path || item.lora_name;
+
+    const elBase = document.getElementById("infoBaseModel");
+    if (elBase) elBase.textContent = item.base_model || "Unknown";
+
+    const elSize = document.getElementById("infoSize");
+    if (elSize) elSize.textContent = item.file_size || "Unknown";
 
     // Tags rendering
     renderModalTags(item.tags || []);
@@ -650,7 +1021,7 @@ function openDetailModal(item) {
     renderModalTriggerWords(item.trigger_words || "", item.civitai_metadata?.trainedWords || []);
 
     // Notes
-    fields.modalNotes.value = item.notes || "";
+    if (fields.modalNotes) fields.modalNotes.value = item.notes || "";
 
     // Tab 1: Examples
     renderModalExamples(item.civitai_metadata?.images || []);
@@ -681,15 +1052,20 @@ function openDetailModal(item) {
     };
 
     const descBox = document.getElementById("modalDescriptionContent");
-    if (item.civitai_metadata?.description) {
-        descBox.innerHTML = sanitizeHTML(item.civitai_metadata.description);
-    } else {
-        descBox.textContent = "No Civitai description available. Run 'Sync All Metadata' to fetch.";
+    if (descBox) {
+        if (item.civitai_metadata?.description) {
+            descBox.innerHTML = sanitizeHTML(item.civitai_metadata.description);
+        } else {
+            descBox.textContent = "No Civitai description available. Run 'Sync All Metadata' to fetch.";
+        }
     }
 
     // Tab 3: Versions
-    document.getElementById("verName").textContent = item.civitai_metadata?.versionName || "v1.0";
-    document.getElementById("verBase").textContent = item.base_model || "Unknown";
+    const verName = document.getElementById("verName");
+    if (verName) verName.textContent = item.civitai_metadata?.versionName || "v1.0";
+
+    const verBase = document.getElementById("verBase");
+    if (verBase) verBase.textContent = item.base_model || "Unknown";
 
     // Tab 4: Prompt Config
     if (!Array.isArray(item.presets) || item.presets.length === 0) {
@@ -710,33 +1086,8 @@ function openDetailModal(item) {
 
     currentActivePresetId = item.presets[0].id;
 
-    // Check if default preset is completely empty and trigger words exist -> pre-fill character
-    const p0 = item.presets[0];
-    const isAllEmpty = !p0.character && !p0.clothing && !p0.no_clothing && !p0.expression && !p0.situation && !p0.location && !p0.lighting;
-    const triggers = item.trigger_words || (item.civitai_metadata?.trainedWords ? item.civitai_metadata.trainedWords.join(", ") : "");
-    if (isAllEmpty && triggers) {
-        p0.character = triggers;
-    }
-
     renderPresetDropdown(item);
     loadPresetValues(item, currentActivePresetId);
-
-    const autoFillBtn = document.getElementById("btnAutoFillTriggers");
-    if (autoFillBtn) {
-        autoFillBtn.onclick = () => {
-            if (triggers) {
-                if (!fields.character.value.trim()) {
-                    fields.character.value = triggers;
-                } else if (!fields.character.value.includes(triggers)) {
-                    fields.character.value += `, ${triggers}`;
-                }
-                updateSendToComfyVisibility();
-                showModalStatus("Auto-filled trigger words into Character block! 🪄", "var(--accent)");
-            } else {
-                showModalStatus("No trigger words found for this LoRA.", "var(--text-muted)");
-            }
-        };
-    }
 
     updateSendToComfyVisibility();
 
@@ -993,83 +1344,116 @@ function renderModalExamples(images) {
             }
 
             const meta = imgObj.meta || {};
-            if (meta.prompt || meta.negativePrompt) {
-                const info = document.createElement("div");
-                info.className = "example-info";
+            const hasParams = meta.width || meta.height || meta.seed || meta.Model || meta.model || meta.steps || meta.sampler || meta.cfgScale;
+            const hasPrompt = meta.prompt;
+            const hasNegPrompt = meta.negativePrompt;
 
-                if (meta.prompt) {
+            if (hasParams || hasPrompt || hasNegPrompt) {
+                const overlay = document.createElement("div");
+                overlay.className = "example-overlay";
+
+                // SECTION 1: Params
+                if (hasParams) {
+                    const paramsLabel = document.createElement("div");
+                    paramsLabel.className = "example-section-label";
+                    paramsLabel.textContent = "Params:";
+                    overlay.appendChild(paramsLabel);
+
+                    const pillsGrid = document.createElement("div");
+                    pillsGrid.className = "param-pills-grid";
+
+                    if (meta.width && meta.height) {
+                        pillsGrid.innerHTML += `<span class="param-pill">Size: <span>${meta.width}x${meta.height}</span></span>`;
+                    }
+                    if (meta.seed) {
+                        pillsGrid.innerHTML += `<span class="param-pill">Seed: <span>${escapeHtml(String(meta.seed))}</span></span>`;
+                    }
+                    const modelName = meta.Model || meta.model;
+                    if (modelName) {
+                        pillsGrid.innerHTML += `<span class="param-pill">Model: <span>${escapeHtml(String(modelName))}</span></span>`;
+                    }
+                    if (meta.steps) {
+                        pillsGrid.innerHTML += `<span class="param-pill">Steps: <span>${meta.steps}</span></span>`;
+                    }
+                    if (meta.sampler) {
+                        pillsGrid.innerHTML += `<span class="param-pill">Sampler: <span>${escapeHtml(String(meta.sampler))}</span></span>`;
+                    }
+                    if (meta.cfgScale) {
+                        pillsGrid.innerHTML += `<span class="param-pill">CFG: <span>${meta.cfgScale}</span></span>`;
+                    }
+
+                    overlay.appendChild(pillsGrid);
+                }
+
+                // SECTION 2: Prompt
+                if (hasPrompt) {
+                    const promptHeader = document.createElement("div");
+                    promptHeader.className = "example-section-label";
+
+                    const promptTitle = document.createElement("span");
+                    promptTitle.textContent = "Prompt:";
+
+                    const copyPromptBtn = document.createElement("button");
+                    copyPromptBtn.type = "button";
+                    copyPromptBtn.className = "btn-copy-prompt-icon";
+                    copyPromptBtn.title = "Copy Positive Prompt";
+                    copyPromptBtn.innerHTML = "📋";
+                    copyPromptBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(meta.prompt);
+                        if (window.Toast) window.Toast.success("Positive prompt copied! 📋");
+                    };
+
+                    promptHeader.appendChild(promptTitle);
+                    promptHeader.appendChild(copyPromptBtn);
+                    overlay.appendChild(promptHeader);
+
                     const promptBox = document.createElement("div");
                     promptBox.className = "example-prompt-box";
-
-                    const header = document.createElement("div");
-                    header.className = "example-prompt-header";
-
-                    const label = document.createElement("div");
-                    label.className = "example-prompt-label positive";
-                    label.innerHTML = `<span>🎨</span> PROMPT`;
-
-                    const copyBtn = document.createElement("button");
-                    copyBtn.type = "button";
-                    copyBtn.className = "btn-copy-prompt";
-                    copyBtn.innerHTML = `📋 Copy`;
-                    copyBtn.addEventListener("click", () => {
-                        window.copyPromptToClipboard(meta.prompt, copyBtn);
-                    });
-
-                    header.appendChild(label);
-                    header.appendChild(copyBtn);
-
-                    const textEl = document.createElement("div");
-                    textEl.className = "example-prompt-text";
-                    textEl.textContent = meta.prompt;
-
-                    promptBox.appendChild(header);
-                    promptBox.appendChild(textEl);
-                    info.appendChild(promptBox);
+                    promptBox.textContent = meta.prompt;
+                    overlay.appendChild(promptBox);
                 }
 
-                if (meta.negativePrompt) {
+                // SECTION 3: Negative Prompt
+                if (hasNegPrompt) {
+                    const negHeader = document.createElement("div");
+                    negHeader.className = "example-section-label";
+
+                    const negTitle = document.createElement("span");
+                    negTitle.textContent = "Negative Prompt:";
+
+                    const copyNegBtn = document.createElement("button");
+                    copyNegBtn.type = "button";
+                    copyNegBtn.className = "btn-copy-prompt-icon";
+                    copyNegBtn.title = "Copy Negative Prompt";
+                    copyNegBtn.innerHTML = "📋";
+                    copyNegBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(meta.negativePrompt);
+                        if (window.Toast) window.Toast.success("Negative prompt copied! 📋");
+                    };
+
+                    negHeader.appendChild(negTitle);
+                    negHeader.appendChild(copyNegBtn);
+                    overlay.appendChild(negHeader);
+
                     const negBox = document.createElement("div");
                     negBox.className = "example-prompt-box negative";
-
-                    const header = document.createElement("div");
-                    header.className = "example-prompt-header";
-
-                    const label = document.createElement("div");
-                    label.className = "example-prompt-label negative";
-                    label.innerHTML = `<span>🚫</span> NEGATIVE PROMPT`;
-
-                    const copyBtn = document.createElement("button");
-                    copyBtn.type = "button";
-                    copyBtn.className = "btn-copy-prompt";
-                    copyBtn.innerHTML = `📋 Copy`;
-                    copyBtn.addEventListener("click", () => {
-                        window.copyPromptToClipboard(meta.negativePrompt, copyBtn);
-                    });
-
-                    header.appendChild(label);
-                    header.appendChild(copyBtn);
-
-                    const textEl = document.createElement("div");
-                    textEl.className = "example-prompt-text negative-text";
-                    textEl.textContent = meta.negativePrompt;
-
-                    negBox.appendChild(header);
-                    negBox.appendChild(textEl);
-                    info.appendChild(negBox);
+                    negBox.textContent = meta.negativePrompt;
+                    overlay.appendChild(negBox);
                 }
 
-                card.appendChild(info);
+                card.appendChild(overlay);
             }
 
             list.appendChild(card);
         });
     } else {
-        list.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 30px;">No example images or generation prompts available for this model.</div>`;
+        list.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px;">No example images available for this model.</div>`;
     }
 }
 
-window.copyPromptToClipboard = function(text, btnEl) {
+window.copyPromptToClipboard = function (text, btnEl) {
     if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
         if (window.Toast) {
@@ -1093,7 +1477,7 @@ window.copyPromptToClipboard = function(text, btnEl) {
 async function resyncSingleLora() {
     if (!currentDetailItem) return;
 
-    const resyncBtn = document.getElementById("btnResyncSingleLora");
+    const resyncBtn = document.getElementById("btnResyncSingle") || document.getElementById("btnResyncSingleLora") || document.getElementById("btnResyncSingleCheckpoint");
     const isIt = (window.i18n && window.i18n.currentLang) === "it";
     const originalText = isIt ? "🔄 Risincronizza Dati Civitai" : "🔄 Resync Civitai Data";
 
@@ -1123,9 +1507,7 @@ async function resyncSingleLora() {
             Object.assign(currentDetailItem, updatedConfig);
             openDetailModal(currentDetailItem);
 
-            populateBaseModelFilterBar();
-            populateAuthorFilterBar();
-            populateTagsFilterBar();
+            updateAllFilterBarsAndDropdowns();
             renderLoraGrid();
         } else {
             showModalStatus(`Error resyncing: ${data.error || 'Metadata not found'}`, "var(--error)");
@@ -1147,6 +1529,9 @@ function closeDetailModal() {
     currentDetailItem = null;
 }
 
+let isLoraSyncActive = false;
+let isLoraSyncCancelled = false;
+
 async function bulkSyncMetadata() {
     const syncBtn = document.getElementById("btnSyncAllMetadata");
     const spinner = document.getElementById("syncSpinner");
@@ -1154,21 +1539,42 @@ async function bulkSyncMetadata() {
 
     if (allLoraItems.length === 0) return;
 
-    syncBtn.classList.add("syncing");
-    spinner.style.display = "inline-block";
+    if (isLoraSyncActive) {
+        // User clicked button while sync is running -> Cancel sync!
+        isLoraSyncCancelled = true;
+        if (btnText) btnText.textContent = "🛑 Stopping...";
+        if (window.Toast) window.Toast.info("Stopping metadata sync...");
+        return;
+    }
+
+    isLoraSyncActive = true;
+    isLoraSyncCancelled = false;
+
+    if (syncBtn) syncBtn.classList.add("syncing");
+    if (spinner) spinner.style.display = "inline-block";
 
     const total = allLoraItems.length;
     let syncedCount = 0;
     const isIt = (window.i18n && window.i18n.currentLang) === "it";
 
+    if (window.Toast) {
+        window.Toast.info(isIt ? `Avviata sincronizzazione in background (${total} modelli)...` : `Started background metadata sync (${total} models)...`);
+    }
+
     try {
         for (let i = 0; i < total; i++) {
+            if (isLoraSyncCancelled) {
+                break;
+            }
+
             const currentItem = allLoraItems[i];
             const currentNum = i + 1;
 
-            btnText.textContent = isIt
-                ? `🔄 Sincronizzazione (${currentNum}/${total})...`
-                : `🔄 Syncing (${currentNum}/${total})...`;
+            if (btnText) {
+                btnText.textContent = isIt
+                    ? `🛑 Stop (${currentNum}/${total})`
+                    : `🛑 Stop Sync (${currentNum}/${total})`;
+            }
 
             try {
                 const res = await fetch("/easy_lora_config/fetch_civitai", {
@@ -1198,26 +1604,30 @@ async function bulkSyncMetadata() {
             }
         }
 
-        populateBaseModelFilterBar();
-        populateAuthorFilterBar();
-        populateTagsFilterBar();
+        updateAllFilterBarsAndDropdowns();
         renderLoraGrid();
 
-        btnText.textContent = isIt
-            ? `✅ Sincronizzazione Completata (${syncedCount}/${total})`
-            : `✅ Sync Completed (${syncedCount}/${total})`;
+        if (isLoraSyncCancelled) {
+            if (btnText) btnText.textContent = isIt ? "🛑 Sincronizzazione Interrotta" : "🛑 Sync Interrupted";
+            if (window.Toast) window.Toast.info(isIt ? `Sincronizzazione interrotta (${syncedCount}/${total} completati)` : `Sync interrupted by user (${syncedCount}/${total} synced)`);
+        } else {
+            if (btnText) btnText.textContent = isIt ? `✅ Sincronizzazione Completata (${syncedCount}/${total})` : `✅ Sync Completed (${syncedCount}/${total})`;
+            if (window.Toast) window.Toast.success(isIt ? `Sincronizzati ${syncedCount}/${total} modelli!` : `Synced ${syncedCount}/${total} models!`);
+        }
 
     } catch (err) {
         console.error("[EasyLoraConfig] Bulk sync error:", err);
-        btnText.textContent = isIt ? "❌ Sincronizzazione Fallita" : "❌ Sync Failed";
+        if (btnText) btnText.textContent = isIt ? "❌ Sincronizzazione Fallita" : "❌ Sync Failed";
+        if (window.Toast) window.Toast.error("Bulk sync error");
     } finally {
+        isLoraSyncActive = false;
         setTimeout(() => {
-            syncBtn.classList.remove("syncing");
-            spinner.style.display = "none";
-            btnText.textContent = isIt
-                ? "🔄 Sincronizza Tutti i Metadati (Civitai)"
-                : "🔄 Sync All Metadata (Civitai)";
-        }, 4000);
+            if (syncBtn) syncBtn.classList.remove("syncing");
+            if (spinner) spinner.style.display = "none";
+            if (btnText) {
+                btnText.textContent = isIt ? "🔄 Sincronizza Tutti i Metadati (Civitai)" : "🔄 Sync All Metadata (Civitai)";
+            }
+        }, 3000);
     }
 }
 
@@ -1261,7 +1671,7 @@ async function saveCurrentLoraConfig() {
             showModalStatus("LoRA configuration saved successfully! ✅", "var(--success)");
             // Update local memory & grid
             Object.assign(currentDetailItem, data.config);
-            populateTagsFilterBar();
+            updateAllFilterBarsAndDropdowns();
             renderLoraGrid();
         } else {
             showModalStatus(`Error saving: ${data.error}`, "var(--error)");
@@ -1337,7 +1747,85 @@ function findLoraConfigNode() {
     return { app: comfyAppInstance, node: selectedNode || loraNodes[0] };
 }
 
-const loraBroadcastChannel = new BroadcastChannel("comfy_cabinet_easy_lora");
+function updateCanvasLoraNodeDirectly(loraName, config) {
+    const candidates = [
+        window.parent?.app,
+        window.opener?.app,
+        window.top?.app,
+        window.app,
+        window.parent?.comfyAPI?.app?.app,
+        window.opener?.comfyAPI?.app?.app,
+        window.top?.comfyAPI?.app?.app,
+        window.comfyAPI?.app?.app
+    ];
+
+    let graph = null;
+    for (const c of candidates) {
+        if (c && c.graph && (Array.isArray(c.graph._nodes) || Array.isArray(c.graph.nodes))) {
+            graph = c.graph;
+            break;
+        }
+    }
+
+    if (!graph) return;
+
+    const allNodes = graph._nodes || graph.nodes || [];
+    const targetNodes = allNodes.filter(node => {
+        if (!node) return false;
+        const typeStr = String(node.type || "").toLowerCase();
+        const titleStr = String(node.title || "").toLowerCase();
+        const classStr = String(node.comfyClass || "").toLowerCase();
+
+        if (typeStr.includes("easylora") || titleStr.includes("easy lora") || classStr.includes("easylora") ||
+            typeStr.includes("easypromptbuilder") || titleStr.includes("easy prompt builder") || classStr.includes("easypromptbuilder")) {
+            return true;
+        }
+
+        if (Array.isArray(node.widgets)) {
+            const widgetNames = node.widgets.map(w => String(w?.name || "").toLowerCase());
+            if (widgetNames.includes("lora_name") && (widgetNames.includes("strength_model") || widgetNames.includes("strength_clip"))) {
+                return true;
+            }
+        }
+
+        return false;
+    });
+
+    if (targetNodes.length === 0) return;
+
+    const weightModel = config.weight_model;
+    const weightClip = config.weight_clip;
+    const blockMap = {
+        character: config.character || "",
+        clothing: config.clothing || "",
+        no_clothing: config.no_clothing || "",
+        expression: config.expression || "",
+        situation: config.situation || "",
+        location: config.location || "",
+        lighting: config.lighting || ""
+    };
+
+    for (const node of targetNodes) {
+        if (!node.widgets) continue;
+        for (const widget of node.widgets) {
+            if (widget.name === "lora_name") {
+                widget.value = loraName;
+                if (widget.callback) widget.callback(loraName);
+            } else if (widget.name === "strength_model" && weightModel !== undefined) {
+                widget.value = weightModel;
+                if (widget.callback) widget.callback(weightModel);
+            } else if (widget.name === "strength_clip" && weightClip !== undefined) {
+                widget.value = weightClip;
+                if (widget.callback) widget.callback(weightClip);
+            } else if (blockMap[widget.name] !== undefined) {
+                widget.value = blockMap[widget.name];
+                if (widget.callback) widget.callback(blockMap[widget.name]);
+            }
+        }
+    }
+
+    if (graph.setDirtyCanvas) graph.setDirtyCanvas(true, true);
+}
 
 async function sendToComfyUI() {
     if (!currentDetailItem) return;
@@ -1346,6 +1834,7 @@ async function sendToComfyUI() {
 
     try {
         await saveCurrentLoraConfig();
+        updateCanvasLoraNodeDirectly(currentDetailItem.lora_name, currentDetailItem);
         const successMsg = isIt
             ? `Configurazione LoRA '${currentDetailItem.lora_name}' inviata con successo al nodo in ComfyUI! 🚀`
             : `LoRA configuration '${currentDetailItem.lora_name}' successfully sent to ComfyUI node! 🚀`;
@@ -1389,13 +1878,9 @@ function closeSettingsModal() {
 }
 
 async function testCivitaiConnection() {
-    const statusBox = document.getElementById("diagnosticStatusBox");
-    const testBtn = document.getElementById("btnTestCivitai");
+    if (window.Toast) window.Toast.info(`⏳ Testing connection to ${currentDomainMode}...`);
 
-    if (statusBox) {
-        statusBox.style.color = "var(--text-muted)";
-        statusBox.innerHTML = `⏳ Testing connection to <strong>${currentDomainMode}</strong>...`;
-    }
+    const testBtn = document.getElementById("btnTestCivitai");
     if (testBtn) testBtn.disabled = true;
 
     try {
@@ -1409,38 +1894,27 @@ async function testCivitaiConnection() {
         });
         const data = await res.json();
 
-        if (statusBox) {
-            if (data.ok) {
-                statusBox.style.color = "var(--success)";
-                statusBox.innerHTML = `<strong>${data.message}</strong>`;
-            } else {
-                if (data.error_type === "invalid_api_key") {
-                    statusBox.style.color = "var(--error)";
-                    statusBox.innerHTML = `<strong>${data.message}</strong><br><span style="font-size:0.8rem; color:var(--text-muted);">Check your API Key in Civitai Account Settings.</span>`;
-                } else if (data.error_type === "domain_unreachable") {
-                    statusBox.style.color = "#f59e0b";
-                    statusBox.innerHTML = `<strong>${data.message}</strong><br><span style="font-size:0.8rem; color:var(--text-muted);">Verify your internet connection or check if domain is blocked by DNS/ISP.</span>`;
-                } else {
-                    statusBox.style.color = "var(--error)";
-                    statusBox.innerHTML = `<strong>${data.message}</strong>`;
-                }
-            }
+        if (data.ok) {
+            if (window.Toast) window.Toast.success(data.message || "Connection successful! ✅");
+        } else {
+            if (window.Toast) window.Toast.error(data.message || "Connection failed ❌");
         }
     } catch (err) {
-        if (statusBox) {
-            statusBox.style.color = "var(--error)";
-            statusBox.innerHTML = `❌ Connection test failed: ${err.message}`;
-        }
+        if (window.Toast) window.Toast.error(`Connection test failed: ${err.message}`);
     } finally {
         if (testBtn) testBtn.disabled = false;
     }
 }
 
 function showModalStatus(message, color) {
-    const el = document.getElementById("modalStatusMsg");
-    if (!el) return;
-    el.textContent = message;
-    el.style.color = color || "var(--text-main)";
+    if (!message) return;
+    let type = "info";
+    if (color && (color.includes("success") || color.includes("accent"))) type = "success";
+    else if (color && (color.includes("error") || color.includes("danger"))) type = "error";
+
+    if (window.Toast) {
+        window.Toast.show(message, type);
+    }
 }
 
 function capitalize(s) {

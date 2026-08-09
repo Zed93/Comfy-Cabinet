@@ -11,49 +11,6 @@
     style.innerHTML = `
         html.i18n-loading { opacity: 0; }
         html { transition: opacity 0.15s ease-in-out; }
-        
-        /* Language Selector Styles */
-        .lang-selector {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            display: flex;
-            gap: 4px;
-            background-color: var(--bg-card, #1e293b);
-            border: 1px solid var(--border-color, #334155);
-            padding: 4px;
-            border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            z-index: 1000;
-        }
-        .lang-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted, #94a3b8);
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 6px 10px;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .lang-btn.active {
-            background-color: var(--accent, #6366f1);
-            color: #ffffff;
-        }
-        .lang-btn:hover:not(.active) {
-            color: var(--text-main, #f8fafc);
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        
-        /* Adjust page header layout if needed */
-        @media (max-width: 600px) {
-            .lang-selector {
-                position: static;
-                margin: 0 auto 16px auto;
-                width: max-content;
-            }
-        }
     `;
 
     try {
@@ -114,7 +71,7 @@
         } catch (e) {
             console.error("Failed to fetch translation:", e);
         } finally {
-            // ALWAYS remove loading class first to prevent blank page if script crashes
+            // ALWAYS remove loading class first
             try {
                 document.documentElement.classList.remove('i18n-loading');
             } catch (e) {
@@ -124,8 +81,8 @@
             try {
                 // Apply translations to DOM
                 applyTranslations();
-                // Inject language selector
-                injectLanguageSelector();
+                // Bind language selector elements
+                bindLanguageSelector();
             } catch (e) {
                 console.error("Error applying translations:", e);
             }
@@ -184,30 +141,28 @@
         });
     }
 
-    function injectLanguageSelector() {
-        // Don't inject if selector already exists
-        if (document.querySelector('.lang-selector')) return;
+    function bindLanguageSelector() {
+        // Sync <select id="langSelect"> if present in settings modal
+        const selectEls = document.querySelectorAll('#langSelect, .lang-select-dropdown');
+        selectEls.forEach(selectEl => {
+            selectEl.value = lang;
+            selectEl.addEventListener('change', (e) => {
+                setLanguage(e.target.value);
+            });
+        });
 
-        const selector = document.createElement('div');
-        selector.className = 'lang-selector';
-
-        const btnEn = document.createElement('button');
-        btnEn.className = 'lang-btn' + (lang === 'en' ? ' active' : '');
-        btnEn.textContent = 'EN';
-        btnEn.addEventListener('click', () => setLanguage('en'));
-
-        const btnIt = document.createElement('button');
-        btnIt.className = 'lang-btn' + (lang === 'it' ? ' active' : '');
-        btnIt.textContent = 'IT';
-        btnIt.addEventListener('click', () => setLanguage('it'));
-
-        selector.appendChild(btnEn);
-        selector.appendChild(btnIt);
-
-        // Append to container if it exists, otherwise to body, otherwise to document element
-        const container = document.querySelector('.container') || document.body || document.documentElement;
-        if (container) {
-            container.appendChild(selector);
+        // Sync container if present
+        const container = document.getElementById('lang-selector-container');
+        if (container && !container.hasChildNodes()) {
+            const select = document.createElement('select');
+            select.id = 'langSelect';
+            select.className = 'lang-select-dropdown';
+            select.innerHTML = `
+                <option value="en" ${lang === 'en' ? 'selected' : ''}>🇬🇧 English (EN)</option>
+                <option value="it" ${lang === 'it' ? 'selected' : ''}>🇮🇹 Italiano (IT)</option>
+            `;
+            select.addEventListener('change', (e) => setLanguage(e.target.value));
+            container.appendChild(select);
         }
     }
 
@@ -221,7 +176,9 @@
         window.location.reload();
     }
 
-    // Initialize when DOM is ready or run immediately if head is parsed
+    window.setLanguage = setLanguage;
+
+    // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

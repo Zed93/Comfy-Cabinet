@@ -36,13 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showStatus(msgKey, defaultMsg, isError = false) {
         const msg = getTranslation(msgKey, defaultMsg);
-        statusMessage.textContent = msg;
-        statusMessage.style.color = isError ? "var(--error)" : "var(--success)";
-        setTimeout(() => {
-            if (statusMessage.textContent === msg) {
-                statusMessage.textContent = "";
-            }
-        }, 3000);
+        if (!msg) return;
+        if (window.Toast) {
+            window.Toast.show(msg, isError ? "error" : "success");
+        }
     }
 
     // Fetch initial data from server
@@ -188,12 +185,14 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", (e) => {
             pendingSaveCategory = e.target.getAttribute("data-category");
             modalBlockTitleInput.value = "";
+            saveBlockModal.style.display = "flex";
             saveBlockModal.classList.add("active");
             modalBlockTitleInput.focus();
         });
     });
 
     modalBlockCancel.addEventListener("click", () => {
+        saveBlockModal.style.display = "none";
         saveBlockModal.classList.remove("active");
         pendingSaveCategory = null;
     });
@@ -217,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!res.ok) throw new Error("Failed to save block preset");
+            saveBlockModal.style.display = "none";
             saveBlockModal.classList.remove("active");
             showStatus("prompt_builder.status_block_saved", "Block preset saved! ✅");
             await loadData();
@@ -291,11 +291,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Open Save Scene Modal
     btnSaveScene.addEventListener("click", () => {
         modalSceneNameInput.value = "";
+        saveSceneModal.style.display = "flex";
         saveSceneModal.classList.add("active");
         modalSceneNameInput.focus();
     });
 
     modalSceneCancel.addEventListener("click", () => {
+        saveSceneModal.style.display = "none";
         saveSceneModal.classList.remove("active");
     });
 
@@ -321,6 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!res.ok) throw new Error("Failed to save scene preset");
+            saveSceneModal.style.display = "none";
             saveSceneModal.classList.remove("active");
             showStatus("prompt_builder.status_scene_saved", "Scene preset saved! ✅");
             await loadData();
