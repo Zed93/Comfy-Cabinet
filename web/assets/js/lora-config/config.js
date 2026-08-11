@@ -24,6 +24,10 @@ const fields = {
     situation: null,
     location: null,
     lighting: null,
+    prompt_1: null,
+    prompt_2: null,
+    prompt_3: null,
+    prompt_4: null,
     closeOutsideCheckbox: null
 };
 
@@ -41,10 +45,14 @@ document.addEventListener("DOMContentLoaded", () => {
     fields.situation = document.getElementById("block_situation");
     fields.location = document.getElementById("block_location");
     fields.lighting = document.getElementById("block_lighting");
+    fields.prompt_1 = document.getElementById("block_prompt_1");
+    fields.prompt_2 = document.getElementById("block_prompt_2");
+    fields.prompt_3 = document.getElementById("block_prompt_3");
+    fields.prompt_4 = document.getElementById("block_prompt_4");
     fields.closeOutsideCheckbox = document.getElementById("closeOutsideCheckbox");
 
     // Add real-time input listeners to update Send to ComfyUI button visibility
-    [fields.character, fields.clothing, fields.no_clothing, fields.expression, fields.situation, fields.location, fields.lighting].forEach(el => {
+    [fields.character, fields.clothing, fields.no_clothing, fields.expression, fields.situation, fields.location, fields.lighting, fields.prompt_1, fields.prompt_2, fields.prompt_3, fields.prompt_4].forEach(el => {
         if (el) {
             el.addEventListener("input", updateSendToComfyVisibility);
         }
@@ -246,27 +254,55 @@ async function loadAllLoras() {
     }
 }
 
+const CIVITAI_OFFICIAL_TYPES = [
+    "Character", "Style", "Concept", "Clothing", "Base model", "Background",
+    "Poses", "Tool", "Assets", "Vehicle", "Buildings", "Objects", "Animal", "Action"
+];
+
 function getLoraType(item) {
-    const rawType = item.civitai_metadata?.type || item.civitai_metadata?.model?.type || "";
-    if (rawType && rawType !== "LORA" && rawType !== "LoCon") {
-        const typeCap = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
-        if (["Character", "Style", "Concept", "Clothing", "Pose", "Background", "Action", "Objects", "Anime"].includes(typeCap)) {
-            return typeCap;
+    if (!item) return "Other";
+    
+    const itemTags = Array.isArray(item.tags) ? item.tags : [];
+    const metaTags = item.civitai_metadata?.tags && Array.isArray(item.civitai_metadata.tags)
+        ? item.civitai_metadata.tags.map(t => typeof t === "object" ? (t.name || String(t)) : String(t))
+        : [];
+    
+    const combinedTags = [...itemTags, ...metaTags];
+
+    for (const tag of combinedTags) {
+        if (!tag) continue;
+        const cleanTag = String(tag).trim().toLowerCase();
+        for (const officialType of CIVITAI_OFFICIAL_TYPES) {
+            if (cleanTag === officialType.toLowerCase()) {
+                return officialType;
+            }
         }
     }
 
-    const tagsArr = (item.tags || []).map(t => t.toLowerCase());
-    const textCorpus = ((item.tags || []).join(" ") + " " + (item.trigger_words || "") + " " + (item.lora_name || "")).toLowerCase();
+    const rawType = item.civitai_metadata?.type || item.civitai_metadata?.model?.type || "";
+    if (rawType && rawType !== "LORA" && rawType !== "LoCon") {
+        const typeCap = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+        for (const officialType of CIVITAI_OFFICIAL_TYPES) {
+            if (typeCap === officialType || (typeCap === "Pose" && officialType === "Poses")) {
+                return officialType;
+            }
+        }
+    }
 
-    if (tagsArr.includes("character") || textCorpus.includes("1girl") || textCorpus.includes("1boy") || textCorpus.includes("character") || textCorpus.includes("woman") || textCorpus.includes("man")) return "Character";
-    if (tagsArr.includes("style") || textCorpus.includes("style") || textCorpus.includes("painterly") || textCorpus.includes("artstyle") || textCorpus.includes("illustration")) return "Style";
-    if (tagsArr.includes("clothing") || textCorpus.includes("clothing") || textCorpus.includes("dress") || textCorpus.includes("outfit") || textCorpus.includes("costume") || textCorpus.includes("suit")) return "Clothing";
-    if (tagsArr.includes("pose") || textCorpus.includes("pose") || textCorpus.includes("posture") || textCorpus.includes("sitting") || textCorpus.includes("standing")) return "Pose";
-    if (tagsArr.includes("background") || textCorpus.includes("background") || textCorpus.includes("landscape") || textCorpus.includes("scenery") || textCorpus.includes("environment")) return "Background";
-    if (tagsArr.includes("action") || textCorpus.includes("action") || textCorpus.includes("fighting") || textCorpus.includes("motion")) return "Action";
-    if (tagsArr.includes("objects") || textCorpus.includes("object") || textCorpus.includes("vehicle") || textCorpus.includes("weapon")) return "Objects";
-    if (tagsArr.includes("anime") || textCorpus.includes("anime") || textCorpus.includes("manga")) return "Anime";
-    if (tagsArr.includes("concept") || textCorpus.includes("concept") || textCorpus.includes("effect")) return "Concept";
+    const textCorpus = (combinedTags.join(" ") + " " + (item.trigger_words || "") + " " + (item.lora_name || "")).toLowerCase();
+    if (textCorpus.includes("character") || textCorpus.includes("1girl") || textCorpus.includes("1boy") || textCorpus.includes("woman") || textCorpus.includes("man")) return "Character";
+    if (textCorpus.includes("clothing") || textCorpus.includes("dress") || textCorpus.includes("outfit") || textCorpus.includes("costume") || textCorpus.includes("suit")) return "Clothing";
+    if (textCorpus.includes("pose") || textCorpus.includes("posture")) return "Poses";
+    if (textCorpus.includes("action") || textCorpus.includes("motion")) return "Action";
+    if (textCorpus.includes("background") || textCorpus.includes("landscape") || textCorpus.includes("scenery") || textCorpus.includes("environment")) return "Background";
+    if (textCorpus.includes("building") || textCorpus.includes("architecture") || textCorpus.includes("ruins")) return "Buildings";
+    if (textCorpus.includes("vehicle") || textCorpus.includes("car")) return "Vehicle";
+    if (textCorpus.includes("animal") || textCorpus.includes("dog") || textCorpus.includes("cat")) return "Animal";
+    if (textCorpus.includes("style") || textCorpus.includes("painterly") || textCorpus.includes("artstyle")) return "Style";
+    if (textCorpus.includes("concept")) return "Concept";
+    if (textCorpus.includes("tool")) return "Tool";
+    if (textCorpus.includes("asset")) return "Assets";
+    if (textCorpus.includes("object") || textCorpus.includes("weapon")) return "Objects";
 
     return "Other";
 }
@@ -328,14 +364,19 @@ function populateTypeFilterBar() {
     const typesList = [
         { id: "ALL", label: "All Types", icon: "" },
         { id: "Character", label: "Character", icon: "👤 " },
+        { id: "Clothing", label: "Clothing", icon: "👗 " },
+        { id: "Poses", label: "Poses", icon: "🤸 " },
+        { id: "Action", label: "Action", icon: "🎬 " },
+        { id: "Background", label: "Background", icon: "🏞️ " },
+        { id: "Buildings", label: "Buildings", icon: "🏰 " },
         { id: "Style", label: "Style", icon: "🎨 " },
         { id: "Concept", label: "Concept", icon: "💡 " },
-        { id: "Clothing", label: "Clothing", icon: "👗 " },
-        { id: "Pose", label: "Pose", icon: "🤸 " },
-        { id: "Background", label: "Background", icon: "🏞️ " },
-        { id: "Action", label: "Action", icon: "🎬 " },
+        { id: "Tool", label: "Tool", icon: "🛠️ " },
+        { id: "Assets", label: "Assets", icon: "💎 " },
+        { id: "Vehicle", label: "Vehicle", icon: "🚗 " },
         { id: "Objects", label: "Objects", icon: "📦 " },
-        { id: "Anime", label: "Anime", icon: "🌸 " }
+        { id: "Animal", label: "Animal", icon: "🐾 " },
+        { id: "Base model", label: "Base Model", icon: "🧬 " }
     ];
 
     bar.innerHTML = "";
@@ -365,7 +406,7 @@ function populateTypeFilterBar() {
 }
 
 function populateBaseModelFilterBar() {
-    const bar = document.getElementById("baseModelFilterBar");
+    const bar = document.getElementById("baseModelFilterBarLora") || document.getElementById("baseModelFilterBar");
     if (!bar) return;
 
     const subset = getFilteredSubset("BASE");
@@ -421,10 +462,10 @@ function populateBaseModelFilterBar() {
 }
 
 function populateAuthorFilterDropdown() {
-    const trigger = document.getElementById("authorFilterTrigger");
-    const panel = document.getElementById("authorFilterPanel");
-    const searchInput = document.getElementById("authorFilterSearch");
-    const list = document.getElementById("authorFilterList");
+    const trigger = document.getElementById("authorFilterTriggerLora") || document.getElementById("authorFilterTrigger");
+    const panel = document.getElementById("authorFilterPanelLora") || document.getElementById("authorFilterPanel");
+    const searchInput = document.getElementById("authorFilterSearchLora") || document.getElementById("authorFilterSearch");
+    const list = document.getElementById("authorFilterListLora") || document.getElementById("authorFilterList");
 
     if (!trigger || !panel || !list) return;
 
@@ -510,10 +551,10 @@ function populateAuthorFilterDropdown() {
 }
 
 function populateTagFilterDropdown() {
-    const trigger = document.getElementById("tagFilterTrigger");
-    const panel = document.getElementById("tagFilterPanel");
-    const searchInput = document.getElementById("tagFilterSearch");
-    const list = document.getElementById("tagFilterList");
+    const trigger = document.getElementById("tagFilterTriggerLora") || document.getElementById("tagFilterTrigger");
+    const panel = document.getElementById("tagFilterPanelLora") || document.getElementById("tagFilterPanel");
+    const searchInput = document.getElementById("tagFilterSearchLora") || document.getElementById("tagFilterSearch");
+    const list = document.getElementById("tagFilterListLora") || document.getElementById("tagFilterList");
 
     if (!trigger || !panel || !list) return;
 
@@ -1080,12 +1121,17 @@ function openDetailModal(item) {
             expression: item.expression || "",
             situation: item.situation || "",
             location: item.location || "",
-            lighting: item.lighting || ""
+            lighting: item.lighting || "",
+            prompt_1: item.prompt_1 || "",
+            prompt_2: item.prompt_2 || "",
+            prompt_3: item.prompt_3 || "",
+            prompt_4: item.prompt_4 || ""
         }];
     }
 
     currentActivePresetId = item.presets[0].id;
 
+    updateConfigFieldsForLora(item);
     renderPresetDropdown(item);
     loadPresetValues(item, currentActivePresetId);
 
@@ -1096,6 +1142,52 @@ function openDetailModal(item) {
 }
 
 let currentActivePresetId = "default";
+
+function updateConfigFieldsForLora(item) {
+    if (!item) return;
+    const loraType = getLoraType(item);
+    const allFieldNames = [
+        "character", "clothing", "no_clothing", "expression",
+        "situation", "location", "lighting",
+        "prompt_1", "prompt_2", "prompt_3", "prompt_4"
+    ];
+
+    let visibleFieldNames = [];
+    let headingLabel = `Prompt Builder Blocks (${loraType})`;
+
+    if (loraType === "Character") {
+        visibleFieldNames = ["character", "clothing", "no_clothing", "expression"];
+        headingLabel = "Prompt Builder Blocks (Character LoRA)";
+    } else if (loraType === "Clothing") {
+        visibleFieldNames = ["clothing", "no_clothing"];
+        headingLabel = "Prompt Builder Blocks (Clothing LoRA)";
+    } else if (loraType === "Poses" || loraType === "Action") {
+        visibleFieldNames = ["expression", "situation"];
+        headingLabel = `Prompt Builder Blocks (${loraType} LoRA)`;
+    } else if (loraType === "Background" || loraType === "Buildings") {
+        visibleFieldNames = ["location", "lighting", "situation"];
+        headingLabel = `Prompt Builder Blocks (${loraType} LoRA)`;
+    } else {
+        visibleFieldNames = ["prompt_1", "prompt_2", "prompt_3", "prompt_4"];
+        headingLabel = `Prompt Builder Blocks (${loraType} LoRA - Basic Outputs)`;
+    }
+
+    const headingEl = document.getElementById("loraBlocksHeading");
+    if (headingEl) {
+        headingEl.textContent = headingLabel;
+    }
+
+    allFieldNames.forEach(fieldName => {
+        const groupEl = document.getElementById(`group_block_${fieldName}`);
+        if (groupEl) {
+            if (visibleFieldNames.includes(fieldName)) {
+                groupEl.style.display = "block";
+            } else {
+                groupEl.style.display = "none";
+            }
+        }
+    });
+}
 
 function setupPresetsUI() {
     const presetSelect = document.getElementById("presetSelect");
@@ -1128,13 +1220,17 @@ function setupPresetsUI() {
                 name: presetName.trim(),
                 weight_model: parseFloat(fields.weightModel.value) || 1.0,
                 weight_clip: parseFloat(fields.weightClip.value) || 1.0,
-                character: fields.character.value,
-                clothing: fields.clothing.value,
-                no_clothing: fields.no_clothing.value,
-                expression: fields.expression.value,
-                situation: fields.situation.value,
-                location: fields.location.value,
-                lighting: fields.lighting.value
+                character: fields.character ? fields.character.value : "",
+                clothing: fields.clothing ? fields.clothing.value : "",
+                no_clothing: fields.no_clothing ? fields.no_clothing.value : "",
+                expression: fields.expression ? fields.expression.value : "",
+                situation: fields.situation ? fields.situation.value : "",
+                location: fields.location ? fields.location.value : "",
+                lighting: fields.lighting ? fields.lighting.value : "",
+                prompt_1: fields.prompt_1 ? fields.prompt_1.value : "",
+                prompt_2: fields.prompt_2 ? fields.prompt_2.value : "",
+                prompt_3: fields.prompt_3 ? fields.prompt_3.value : "",
+                prompt_4: fields.prompt_4 ? fields.prompt_4.value : ""
             };
 
             if (!Array.isArray(currentDetailItem.presets)) {
@@ -1178,13 +1274,17 @@ function syncCurrentInputsToPreset(item, presetId) {
     if (p) {
         p.weight_model = parseFloat(fields.weightModel.value) || 1.0;
         p.weight_clip = parseFloat(fields.weightClip.value) || 1.0;
-        p.character = fields.character.value;
-        p.clothing = fields.clothing.value;
-        p.no_clothing = fields.no_clothing.value;
-        p.expression = fields.expression.value;
-        p.situation = fields.situation.value;
-        p.location = fields.location.value;
-        p.lighting = fields.lighting.value;
+        p.character = fields.character ? fields.character.value : "";
+        p.clothing = fields.clothing ? fields.clothing.value : "";
+        p.no_clothing = fields.no_clothing ? fields.no_clothing.value : "";
+        p.expression = fields.expression ? fields.expression.value : "";
+        p.situation = fields.situation ? fields.situation.value : "";
+        p.location = fields.location ? fields.location.value : "";
+        p.lighting = fields.lighting ? fields.lighting.value : "";
+        p.prompt_1 = fields.prompt_1 ? fields.prompt_1.value : "";
+        p.prompt_2 = fields.prompt_2 ? fields.prompt_2.value : "";
+        p.prompt_3 = fields.prompt_3 ? fields.prompt_3.value : "";
+        p.prompt_4 = fields.prompt_4 ? fields.prompt_4.value : "";
     }
 }
 
@@ -1204,7 +1304,11 @@ function renderPresetDropdown(item) {
             expression: item.expression || "",
             situation: item.situation || "",
             location: item.location || "",
-            lighting: item.lighting || ""
+            lighting: item.lighting || "",
+            prompt_1: item.prompt_1 || "",
+            prompt_2: item.prompt_2 || "",
+            prompt_3: item.prompt_3 || "",
+            prompt_4: item.prompt_4 || ""
         }];
     }
 
@@ -1224,15 +1328,19 @@ function loadPresetValues(item, presetId) {
     if (!targetPreset) targetPreset = item.presets[0];
 
     currentActivePresetId = targetPreset.id;
-    fields.weightModel.value = targetPreset.weight_model ?? 1.0;
-    fields.weightClip.value = targetPreset.weight_clip ?? 1.0;
-    fields.character.value = targetPreset.character || "";
-    fields.clothing.value = targetPreset.clothing || "";
-    fields.no_clothing.value = targetPreset.no_clothing || "";
-    fields.expression.value = targetPreset.expression || "";
-    fields.situation.value = targetPreset.situation || "";
-    fields.location.value = targetPreset.location || "";
-    fields.lighting.value = targetPreset.lighting || "";
+    if (fields.weightModel) fields.weightModel.value = targetPreset.weight_model ?? 1.0;
+    if (fields.weightClip) fields.weightClip.value = targetPreset.weight_clip ?? 1.0;
+    if (fields.character) fields.character.value = targetPreset.character || "";
+    if (fields.clothing) fields.clothing.value = targetPreset.clothing || "";
+    if (fields.no_clothing) fields.no_clothing.value = targetPreset.no_clothing || "";
+    if (fields.expression) fields.expression.value = targetPreset.expression || "";
+    if (fields.situation) fields.situation.value = targetPreset.situation || "";
+    if (fields.location) fields.location.value = targetPreset.location || "";
+    if (fields.lighting) fields.lighting.value = targetPreset.lighting || "";
+    if (fields.prompt_1) fields.prompt_1.value = targetPreset.prompt_1 || "";
+    if (fields.prompt_2) fields.prompt_2.value = targetPreset.prompt_2 || "";
+    if (fields.prompt_3) fields.prompt_3.value = targetPreset.prompt_3 || "";
+    if (fields.prompt_4) fields.prompt_4.value = targetPreset.prompt_4 || "";
 
     updateSendToComfyVisibility();
 }
@@ -1248,7 +1356,11 @@ function updateSendToComfyVisibility() {
         fields.expression?.value,
         fields.situation?.value,
         fields.location?.value,
-        fields.lighting?.value
+        fields.lighting?.value,
+        fields.prompt_1?.value,
+        fields.prompt_2?.value,
+        fields.prompt_3?.value,
+        fields.prompt_4?.value
     ].some(val => val && val.trim().length > 0);
 
     if (hasAnyConfig) {
@@ -1640,19 +1752,23 @@ async function saveCurrentLoraConfig() {
         lora_name: currentDetailItem.lora_name,
         weight_model: parseFloat(fields.weightModel.value) || 1.0,
         weight_clip: parseFloat(fields.weightClip.value) || 1.0,
-        character: fields.character.value,
-        clothing: fields.clothing.value,
-        no_clothing: fields.no_clothing.value,
-        expression: fields.expression.value,
-        situation: fields.situation.value,
-        location: fields.location.value,
-        lighting: fields.lighting.value,
+        character: fields.character ? fields.character.value : "",
+        clothing: fields.clothing ? fields.clothing.value : "",
+        no_clothing: fields.no_clothing ? fields.no_clothing.value : "",
+        expression: fields.expression ? fields.expression.value : "",
+        situation: fields.situation ? fields.situation.value : "",
+        location: fields.location ? fields.location.value : "",
+        lighting: fields.lighting ? fields.lighting.value : "",
+        prompt_1: fields.prompt_1 ? fields.prompt_1.value : "",
+        prompt_2: fields.prompt_2 ? fields.prompt_2.value : "",
+        prompt_3: fields.prompt_3 ? fields.prompt_3.value : "",
+        prompt_4: fields.prompt_4 ? fields.prompt_4.value : "",
         trigger_words: currentDetailItem.trigger_words || "",
         tags: currentDetailItem.tags || [],
         base_model: currentDetailItem.base_model || "",
         author: currentDetailItem.author || "",
         cover_url: currentDetailItem.cover_url || "",
-        notes: fields.modalNotes.value,
+        notes: fields.modalNotes ? fields.modalNotes.value : "",
         presets: currentDetailItem.presets || [],
         civitai_id: currentDetailItem.civitai_id,
         model_version_id: currentDetailItem.model_version_id,
@@ -1747,6 +1863,21 @@ function findLoraConfigNode() {
     return { app: comfyAppInstance, node: selectedNode || loraNodes[0] };
 }
 
+function getTargetNodeClassForLora(config) {
+    const loraType = getLoraType(config);
+    if (loraType === "Character") {
+        return ["easyloracharacterconfigloader", "easyloracharacter", "character loader"];
+    } else if (loraType === "Clothing") {
+        return ["easyloraclothingconfigloader", "easyloraclothing", "clothing loader"];
+    } else if (loraType === "Poses" || loraType === "Action") {
+        return ["easyloraposeactionconfigloader", "easyloraposeaction", "pose & action loader", "pose loader", "action loader"];
+    } else if (loraType === "Background" || loraType === "Buildings") {
+        return ["easylorabackgroundconfigloader", "easylorabackground", "background loader"];
+    } else {
+        return ["easylorabasicconfigloader", "easylorabasic", "basic loader"];
+    }
+}
+
 function updateCanvasLoraNodeDirectly(loraName, config) {
     const candidates = [
         window.parent?.app,
@@ -1760,9 +1891,11 @@ function updateCanvasLoraNodeDirectly(loraName, config) {
     ];
 
     let graph = null;
+    let comfyAppInstance = null;
     for (const c of candidates) {
         if (c && c.graph && (Array.isArray(c.graph._nodes) || Array.isArray(c.graph.nodes))) {
             graph = c.graph;
+            comfyAppInstance = c;
             break;
         }
     }
@@ -1770,7 +1903,9 @@ function updateCanvasLoraNodeDirectly(loraName, config) {
     if (!graph) return;
 
     const allNodes = graph._nodes || graph.nodes || [];
-    const targetNodes = allNodes.filter(node => {
+    
+    // 1. Collect all EasyLora candidate nodes on graph
+    const allLoraNodes = allNodes.filter(node => {
         if (!node) return false;
         const typeStr = String(node.type || "").toLowerCase();
         const titleStr = String(node.title || "").toLowerCase();
@@ -1791,7 +1926,40 @@ function updateCanvasLoraNodeDirectly(loraName, config) {
         return false;
     });
 
+    if (allLoraNodes.length === 0) return;
+
+    // 2. Filter to specialized nodes matching this LoRA's type
+    const targetClassKeywords = getTargetNodeClassForLora(config);
+    let targetNodes = allLoraNodes.filter(node => {
+        const typeStr = String(node.type || "").toLowerCase();
+        const titleStr = String(node.title || "").toLowerCase();
+        const classStr = String(node.comfyClass || "").toLowerCase();
+        return targetClassKeywords.some(kw => typeStr.includes(kw) || titleStr.includes(kw) || classStr.includes(kw));
+    });
+
+    // 3. Fallback: If no node of this specific LoRA type exists on canvas, check for EasyLoraBasicConfigLoader
+    if (targetNodes.length === 0) {
+        const basicKeywords = ["easylorabasicconfigloader", "easylorabasic", "basic loader"];
+        targetNodes = allLoraNodes.filter(node => {
+            const typeStr = String(node.type || "").toLowerCase();
+            const titleStr = String(node.title || "").toLowerCase();
+            const classStr = String(node.comfyClass || "").toLowerCase();
+            return basicKeywords.some(kw => typeStr.includes(kw) || titleStr.includes(kw) || classStr.includes(kw));
+        });
+    }
+
+    // 4. If no matching specialized node or basic node exists, return early without touching unrelated nodes
     if (targetNodes.length === 0) return;
+
+    // 5. If one of the target nodes is currently selected by user on canvas, prioritize only the selected node
+    try {
+        const selectedNodesObj = comfyAppInstance?.canvas?.selected_nodes || {};
+        const selectedList = Object.values(selectedNodesObj);
+        const selectedTarget = selectedList.find(n => targetNodes.includes(n));
+        if (selectedTarget) {
+            targetNodes = [selectedTarget];
+        }
+    } catch (e) { }
 
     const weightModel = config.weight_model;
     const weightClip = config.weight_clip;
@@ -1802,7 +1970,11 @@ function updateCanvasLoraNodeDirectly(loraName, config) {
         expression: config.expression || "",
         situation: config.situation || "",
         location: config.location || "",
-        lighting: config.lighting || ""
+        lighting: config.lighting || "",
+        prompt_1: config.prompt_1 || "",
+        prompt_2: config.prompt_2 || "",
+        prompt_3: config.prompt_3 || "",
+        prompt_4: config.prompt_4 || ""
     };
 
     for (const node of targetNodes) {

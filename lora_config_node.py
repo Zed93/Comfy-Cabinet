@@ -94,7 +94,11 @@ def init_db():
         ("cover_url", "TEXT DEFAULT ''"),
         ("notes", "TEXT DEFAULT ''"),
         ("presets", "TEXT DEFAULT '[]'"),
-        ("last_synced", "TIMESTAMP")
+        ("last_synced", "TIMESTAMP"),
+        ("prompt_1", "TEXT DEFAULT ''"),
+        ("prompt_2", "TEXT DEFAULT ''"),
+        ("prompt_3", "TEXT DEFAULT ''"),
+        ("prompt_4", "TEXT DEFAULT ''")
     ]
     for col_name, col_def in migration_cols:
         if col_name not in cols:
@@ -163,7 +167,8 @@ def get_lora_settings(lora_name):
     cursor.execute("""
         SELECT weight_model, weight_clip, character, clothing, no_clothing, expression, situation, location, lighting,
                trigger_words, civitai_metadata, civitai_id, model_version_id, tags, base_model, author,
-               file_size, relative_path, cover_url, notes, presets, last_synced
+               file_size, relative_path, cover_url, notes, presets, last_synced,
+               prompt_1, prompt_2, prompt_3, prompt_4
         FROM lora_settings WHERE lora_name = ?
     """, (lora_name,))
     row = cursor.fetchone()
@@ -184,6 +189,11 @@ def get_lora_settings(lora_name):
         try: presets_list = json.loads(row[20]) if row[20] else []
         except Exception: presets_list = []
 
+        p1 = row[22] if len(row) > 22 and row[22] is not None else ""
+        p2 = row[23] if len(row) > 23 and row[23] is not None else ""
+        p3 = row[24] if len(row) > 24 and row[24] is not None else ""
+        p4 = row[25] if len(row) > 25 and row[25] is not None else ""
+
         # If no presets exist, construct default preset from row values
         if not presets_list:
             presets_list = [{
@@ -197,7 +207,11 @@ def get_lora_settings(lora_name):
                 "expression": row[5] or "",
                 "situation": row[6] or "",
                 "location": row[7] or "",
-                "lighting": row[8] or ""
+                "lighting": row[8] or "",
+                "prompt_1": p1,
+                "prompt_2": p2,
+                "prompt_3": p3,
+                "prompt_4": p4
             }]
 
         return {
@@ -223,7 +237,11 @@ def get_lora_settings(lora_name):
             "cover_url": row[18] or "",
             "notes": row[19] or "",
             "presets": presets_list,
-            "last_synced": row[21] or ""
+            "last_synced": row[21] or "",
+            "prompt_1": p1,
+            "prompt_2": p2,
+            "prompt_3": p3,
+            "prompt_4": p4
         }
 
     default_presets = [{
@@ -237,7 +255,11 @@ def get_lora_settings(lora_name):
         "expression": "",
         "situation": "",
         "location": "",
-        "lighting": ""
+        "lighting": "",
+        "prompt_1": "",
+        "prompt_2": "",
+        "prompt_3": "",
+        "prompt_4": ""
     }]
 
     return {
@@ -263,7 +285,11 @@ def get_lora_settings(lora_name):
         "cover_url": "",
         "notes": "",
         "presets": default_presets,
-        "last_synced": ""
+        "last_synced": "",
+        "prompt_1": "",
+        "prompt_2": "",
+        "prompt_3": "",
+        "prompt_4": ""
     }
 
 def get_ext_from_url_or_ct(url, ct=""):
@@ -450,6 +476,10 @@ async def api_save_settings(request):
 
         weight_model = float(data.get("weight_model", 1.0))
         weight_clip = float(data.get("weight_clip", 1.0))
+        prompt_1 = data.get("prompt_1", "")
+        prompt_2 = data.get("prompt_2", "")
+        prompt_3 = data.get("prompt_3", "")
+        prompt_4 = data.get("prompt_4", "")
         character = data.get("character", "")
         clothing = data.get("clothing", "")
         no_clothing = data.get("no_clothing", "")
@@ -476,8 +506,9 @@ async def api_save_settings(request):
             INSERT INTO lora_settings (
                 lora_name, weight_model, weight_clip, character, clothing, no_clothing, expression,
                 situation, location, lighting, trigger_words, civitai_metadata, civitai_id, model_version_id,
-                tags, base_model, author, file_size, relative_path, cover_url, notes, presets
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                tags, base_model, author, file_size, relative_path, cover_url, notes, presets,
+                prompt_1, prompt_2, prompt_3, prompt_4
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(lora_name) DO UPDATE SET
                 weight_model=excluded.weight_model,
                 weight_clip=excluded.weight_clip,
@@ -499,11 +530,16 @@ async def api_save_settings(request):
                 relative_path=excluded.relative_path,
                 cover_url=excluded.cover_url,
                 notes=excluded.notes,
-                presets=excluded.presets
+                presets=excluded.presets,
+                prompt_1=excluded.prompt_1,
+                prompt_2=excluded.prompt_2,
+                prompt_3=excluded.prompt_3,
+                prompt_4=excluded.prompt_4
         """, (
             lora_name, weight_model, weight_clip, character, clothing, no_clothing, expression,
             situation, location, lighting, trigger_words, civitai_metadata, civitai_id, model_version_id,
-            tags, base_model, author, file_size, relative_path, cover_url, notes, presets
+            tags, base_model, author, file_size, relative_path, cover_url, notes, presets,
+            prompt_1, prompt_2, prompt_3, prompt_4
         ))
         conn.commit()
         conn.close()
@@ -765,7 +801,21 @@ async def api_bulk_fetch_civitai(request):
 
 # ==================== COMFYUI CUSTOM NODE ====================
 
-class EasyLoraConfigLoader:
+# ==================== COMFYUI CUSTOM NODES ====================
+
+def _load_and_resolve_lora(model, clip, lora_name, strength_model, strength_clip):
+    import nodes
+    if strength_model != 0 or strength_clip != 0:
+        out_model, out_clip = nodes.LoraLoader().load_lora(model, clip, lora_name, strength_model, strength_clip)
+    else:
+        out_model, out_clip = model, clip
+    saved = get_lora_settings(lora_name)
+    return out_model, out_clip, saved
+
+def _get_field(override_val, saved_dict, key):
+    return override_val if override_val.strip() else saved_dict.get(key, "")
+
+class EasyLoraCharacterConfigLoader:
     def __init__(self):
         pass
 
@@ -785,14 +835,11 @@ class EasyLoraConfigLoader:
                 "clothing": ("STRING", {"multiline": True, "default": ""}),
                 "no_clothing": ("STRING", {"multiline": True, "default": ""}),
                 "expression": ("STRING", {"multiline": True, "default": ""}),
-                "situation": ("STRING", {"multiline": True, "default": ""}),
-                "location": ("STRING", {"multiline": True, "default": ""}),
-                "lighting": ("STRING", {"multiline": True, "default": ""}),
             }
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("MODEL", "CLIP", "character", "clothing", "no_clothing", "expression", "situation", "location", "lighting")
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("MODEL", "CLIP", "character", "clothing", "no_clothing", "expression")
     FUNCTION = "process"
     CATEGORY = "🗄️ Comfy Cabinet"
 
@@ -802,35 +849,199 @@ class EasyLoraConfigLoader:
         return time.time()
 
     def process(self, model, clip, lora_name, strength_model, strength_clip,
-                character="", clothing="", no_clothing="",
-                expression="", situation="", location="", lighting=""):
-        import nodes
-        if strength_model != 0 or strength_clip != 0:
-            out_model, out_clip = nodes.LoraLoader().load_lora(model, clip, lora_name, strength_model, strength_clip)
-        else:
-            out_model, out_clip = model, clip
-
-        saved = get_lora_settings(lora_name)
-
-        p_character = character if character.strip() else saved["character"]
-        p_clothing = clothing if clothing.strip() else saved["clothing"]
-        p_no_clothing = no_clothing if no_clothing.strip() else saved.get("no_clothing", "")
-        p_expression = expression if expression.strip() else saved["expression"]
-        p_situation = situation if situation.strip() else saved["situation"]
-        p_location = location if location.strip() else saved["location"]
-        p_lighting = lighting if lighting.strip() else saved["lighting"]
-
+                character="", clothing="", no_clothing="", expression=""):
+        out_model, out_clip, saved = _load_and_resolve_lora(model, clip, lora_name, strength_model, strength_clip)
         return (
             out_model,
             out_clip,
-            p_character,
-            p_clothing,
-            p_no_clothing,
-            p_expression,
-            p_situation,
-            p_location,
-            p_lighting
+            _get_field(character, saved, "character"),
+            _get_field(clothing, saved, "clothing"),
+            _get_field(no_clothing, saved, "no_clothing"),
+            _get_field(expression, saved, "expression")
         )
 
-NODE_CLASS_MAPPINGS = {"EasyLoraConfigLoader": EasyLoraConfigLoader}
-NODE_DISPLAY_NAME_MAPPINGS = {"EasyLoraConfigLoader": "💊 Easy LoRA Config Loader"}
+class EasyLoraClothingConfigLoader:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        loras = folder_paths.get_filename_list("loras")
+        return {
+            "required": {
+                "model": ("MODEL",),
+                "clip": ("CLIP",),
+                "lora_name": (loras,),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+                "strength_clip": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+            },
+            "optional": {
+                "clothing": ("STRING", {"multiline": True, "default": ""}),
+                "no_clothing": ("STRING", {"multiline": True, "default": ""}),
+            }
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING")
+    RETURN_NAMES = ("MODEL", "CLIP", "clothing", "no_clothing")
+    FUNCTION = "process"
+    CATEGORY = "🗄️ Comfy Cabinet"
+
+    @classmethod
+    def IS_CHANGED(s, model, clip, lora_name, strength_model, strength_clip, **kwargs):
+        import time
+        return time.time()
+
+    def process(self, model, clip, lora_name, strength_model, strength_clip,
+                clothing="", no_clothing=""):
+        out_model, out_clip, saved = _load_and_resolve_lora(model, clip, lora_name, strength_model, strength_clip)
+        return (
+            out_model,
+            out_clip,
+            _get_field(clothing, saved, "clothing"),
+            _get_field(no_clothing, saved, "no_clothing")
+        )
+
+class EasyLoraPoseActionConfigLoader:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        loras = folder_paths.get_filename_list("loras")
+        return {
+            "required": {
+                "model": ("MODEL",),
+                "clip": ("CLIP",),
+                "lora_name": (loras,),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+                "strength_clip": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+            },
+            "optional": {
+                "expression": ("STRING", {"multiline": True, "default": ""}),
+                "situation": ("STRING", {"multiline": True, "default": ""}),
+            }
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING")
+    RETURN_NAMES = ("MODEL", "CLIP", "expression", "situation")
+    FUNCTION = "process"
+    CATEGORY = "🗄️ Comfy Cabinet"
+
+    @classmethod
+    def IS_CHANGED(s, model, clip, lora_name, strength_model, strength_clip, **kwargs):
+        import time
+        return time.time()
+
+    def process(self, model, clip, lora_name, strength_model, strength_clip,
+                expression="", situation=""):
+        out_model, out_clip, saved = _load_and_resolve_lora(model, clip, lora_name, strength_model, strength_clip)
+        return (
+            out_model,
+            out_clip,
+            _get_field(expression, saved, "expression"),
+            _get_field(situation, saved, "situation")
+        )
+
+class EasyLoraBackgroundConfigLoader:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        loras = folder_paths.get_filename_list("loras")
+        return {
+            "required": {
+                "model": ("MODEL",),
+                "clip": ("CLIP",),
+                "lora_name": (loras,),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+                "strength_clip": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+            },
+            "optional": {
+                "location": ("STRING", {"multiline": True, "default": ""}),
+                "lighting": ("STRING", {"multiline": True, "default": ""}),
+                "situation": ("STRING", {"multiline": True, "default": ""}),
+            }
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("MODEL", "CLIP", "location", "lighting", "situation")
+    FUNCTION = "process"
+    CATEGORY = "🗄️ Comfy Cabinet"
+
+    @classmethod
+    def IS_CHANGED(s, model, clip, lora_name, strength_model, strength_clip, **kwargs):
+        import time
+        return time.time()
+
+    def process(self, model, clip, lora_name, strength_model, strength_clip,
+                location="", lighting="", situation=""):
+        out_model, out_clip, saved = _load_and_resolve_lora(model, clip, lora_name, strength_model, strength_clip)
+        return (
+            out_model,
+            out_clip,
+            _get_field(location, saved, "location"),
+            _get_field(lighting, saved, "lighting"),
+            _get_field(situation, saved, "situation")
+        )
+
+class EasyLoraBasicConfigLoader:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        loras = folder_paths.get_filename_list("loras")
+        return {
+            "required": {
+                "model": ("MODEL",),
+                "clip": ("CLIP",),
+                "lora_name": (loras,),
+                "strength_model": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+                "strength_clip": ("FLOAT", {"default": 1.0, "min": -20.0, "max": 20.0, "step": 0.05}),
+            },
+            "optional": {
+                "prompt_1": ("STRING", {"multiline": True, "default": ""}),
+                "prompt_2": ("STRING", {"multiline": True, "default": ""}),
+                "prompt_3": ("STRING", {"multiline": True, "default": ""}),
+                "prompt_4": ("STRING", {"multiline": True, "default": ""}),
+            }
+        }
+
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("MODEL", "CLIP", "prompt_1", "prompt_2", "prompt_3", "prompt_4")
+    FUNCTION = "process"
+    CATEGORY = "🗄️ Comfy Cabinet"
+
+    @classmethod
+    def IS_CHANGED(s, model, clip, lora_name, strength_model, strength_clip, **kwargs):
+        import time
+        return time.time()
+
+    def process(self, model, clip, lora_name, strength_model, strength_clip,
+                prompt_1="", prompt_2="", prompt_3="", prompt_4=""):
+        out_model, out_clip, saved = _load_and_resolve_lora(model, clip, lora_name, strength_model, strength_clip)
+        return (
+            out_model,
+            out_clip,
+            _get_field(prompt_1, saved, "prompt_1"),
+            _get_field(prompt_2, saved, "prompt_2"),
+            _get_field(prompt_3, saved, "prompt_3"),
+            _get_field(prompt_4, saved, "prompt_4")
+        )
+
+NODE_CLASS_MAPPINGS = {
+    "EasyLoraCharacterConfigLoader": EasyLoraCharacterConfigLoader,
+    "EasyLoraClothingConfigLoader": EasyLoraClothingConfigLoader,
+    "EasyLoraPoseActionConfigLoader": EasyLoraPoseActionConfigLoader,
+    "EasyLoraBackgroundConfigLoader": EasyLoraBackgroundConfigLoader,
+    "EasyLoraBasicConfigLoader": EasyLoraBasicConfigLoader,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "EasyLoraCharacterConfigLoader": "💊 Easy LoRA Character Loader",
+    "EasyLoraClothingConfigLoader": "💊 Easy LoRA Clothing Loader",
+    "EasyLoraPoseActionConfigLoader": "💊 Easy LoRA Pose & Action Loader",
+    "EasyLoraBackgroundConfigLoader": "💊 Easy LoRA Background Loader",
+    "EasyLoraBasicConfigLoader": "💊 Easy LoRA Basic Loader",
+}

@@ -688,37 +688,53 @@
                         </div>
 
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                            <h4 data-i18n="lora_config.blocks_title" style="font-size: 0.95rem; color: var(--accent); margin: 0;">Prompt Builder Blocks (7 Blocks)</h4>
+                            <h4 id="loraBlocksHeading" data-i18n="lora_config.blocks_title" style="font-size: 0.95rem; color: var(--accent); margin: 0;">Prompt Builder Blocks</h4>
                         </div>
 
-                        <div class="grid-2">
-                            <div class="form-group">
+                        <div class="grid-2" id="loraBlocksGrid">
+                            <div class="form-group" id="group_block_character">
                                 <label data-i18n="lora_config.block_character">👤 Character</label>
                                 <textarea id="block_character" placeholder="Character details..."></textarea>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="group_block_clothing">
                                 <label data-i18n="lora_config.block_clothing">👗 Clothing</label>
                                 <textarea id="block_clothing" placeholder="Outfit, costume..."></textarea>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="group_block_no_clothing">
                                 <label data-i18n="lora_config.block_no_clothing">🔞 No Clothing (NSFW)</label>
                                 <textarea id="block_no_clothing" placeholder="NSFW / nude prompt tags..."></textarea>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="group_block_expression">
                                 <label data-i18n="lora_config.block_expression">😊 Expression</label>
                                 <textarea id="block_expression" placeholder="Facial expression..."></textarea>
                             </div>
-                            <div class="form-group">
-                                <label data-i18n="lora_group.block_situation">🎬 Situation</label>
+                            <div class="form-group" id="group_block_situation">
+                                <label data-i18n="lora_config.block_situation">🎬 Situation</label>
                                 <textarea id="block_situation" placeholder="Action, pose..."></textarea>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="group_block_location">
                                 <label data-i18n="lora_config.block_location">🏰 Location</label>
                                 <textarea id="block_location" placeholder="Environment, background..."></textarea>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="group_block_lighting">
                                 <label data-i18n="lora_config.block_lighting">💡 Lighting</label>
                                 <textarea id="block_lighting" placeholder="Lighting, camera..."></textarea>
+                            </div>
+                            <div class="form-group" id="group_block_prompt_1">
+                                <label data-i18n="lora_config.block_prompt_1">📝 Prompt 1</label>
+                                <textarea id="block_prompt_1" placeholder="Generic prompt block 1..."></textarea>
+                            </div>
+                            <div class="form-group" id="group_block_prompt_2">
+                                <label data-i18n="lora_config.block_prompt_2">📝 Prompt 2</label>
+                                <textarea id="block_prompt_2" placeholder="Generic prompt block 2..."></textarea>
+                            </div>
+                            <div class="form-group" id="group_block_prompt_3">
+                                <label data-i18n="lora_config.block_prompt_3">📝 Prompt 3</label>
+                                <textarea id="block_prompt_3" placeholder="Generic prompt block 3..."></textarea>
+                            </div>
+                            <div class="form-group" id="group_block_prompt_4">
+                                <label data-i18n="lora_config.block_prompt_4">📝 Prompt 4</label>
+                                <textarea id="block_prompt_4" placeholder="Generic prompt block 4..."></textarea>
                             </div>
                         </div>
                     </div>

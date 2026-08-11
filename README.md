@@ -4,7 +4,7 @@ Welcome to the **Comfy Cabinet**, a boutique virtual exhibit of handcrafted Comf
 
 Current Exhibition: 🎨 **Easy Checkpoint Config Loader**, 🧩 **Easy Prompt Builder**, & 💊 **Easy LoRA Config Loader**
 
-**ATTENTION**: v0.2.0 is out for testing in the real world as it's a Release Candidate. I've fully reworked the Web UI and introduced many new functionalities. Please read the [Changelog](CHANGELOG.md) for more information.
+**ATTENTION**: v0.2.1 is out for testing in the real world as it's a Release Candidate. I've fully reworked the Web UI and introduced many new functionalities. Please read the [Changelog](CHANGELOG.md) for more information.
 
 ---
 
@@ -25,16 +25,23 @@ Your options used to be:
 
 The **Easy Checkpoint Config** is like having a very polite, highly organized butler inside your ComfyUI instance. It intercepts your checkpoint selection and whispers the exact right settings to your workflow.
 
-- **Dynamic Samplers/Schedulers:** It doesn't rely on a dusty, hardcoded list as other custom nodes. It aggressively interrogates your ComfyUI installation at startup to find *exactly* what samplers and schedulers you have installed (yes, even those weird ones from that custom node repo you cloned at 3 AM).
 - **Smart Prompt Stitching:** Automatically glues your custom global prefix (e.g., *masterpiece, highly detailed*) and suffix tags to your user prompt using whatever custom separator you want. Want a comma? Cool. Want a line break (`\n`) because you like your prompts structured like a grocery list? Go wild.
+- **Automated Civitai Metadata Sync**: Fetches model titles, cover images/videos, creator usernames, HTML descriptions, tags, and trigger words directly from Civitai (supporting both `civitai.com` and `civitai.red` domains, BYOK style: you'll have to use your own api key), caching all preview media locally (in the `civitai_cache/` folder, please don't delete it or you'll lose all the previews and will have to resync them).
+- **Stylized Checkpoints gallery**: Displays your local Checkpoints in a responsive grid with filtering by Base Model Architecture, Author, and Tags.
+- **Collapsible Search Filters**: Keep your gallery clean with a collapsible search filter panel featuring real-time active filter badges and state persistence.
+- **Canvas Real-Time Auto-Population**: Selecting a `ckpt_name` directly from the dropdown menu of a canvas node populates its strength weights and prompt fields automatically.
+- **Dynamic Config Tab**: Modals in Web UI automatically display only relevant prompt input fields based on the Checkpoint's main Civitai category tag.
 
 #### 🚀 How to Use It
 
-- Click the shiny new "Easy Config" button injected into your ComfyUI top menu.
-- Search for your checkpoint in the dropdown (yes, you can actually type to search, welcome to the future).
+- In the ComfyUI canvas, add the **"🎨 Easy Checkpoint Config Loader"** node (`🗄️ Comfy Cabinet` category).
+- Click the **"Easy Config"** button injected into your ComfyUI top menu.
+- Select the **"🎨 Easy Checkpoint Config"** tool.
+- Select the desired checkpoint (you can type to search its name or use the provided filters).
+- Click on the **"Configuration"** tab inside the modal that opens.
 - Set your favorite Steps, CFG, Sampler, and default prompt modifiers.
-- Hit Save.
-- Go back to ComfyUI, drop the "Easy Checkpoint Config Loader" node, and watch your workflow automatically adapt to whatever model you throw at it.
+- Hit **"💾 Save config"** and then **"🚀 Send to ComfyUI"** to update the node on the canvas.
+- Repeat for all your checkpoints.
 
 ---
 
@@ -48,11 +55,11 @@ Writing long, complex prompts often devolves into an unreadable wall of text. Wa
 
 ### 💡 The Solution
 
-The **Easy Prompt Builder** breaks your prompts into structured, modular building blocks, giving you surgical control over your generations without prompt chaos.
+The **Easy Prompt Builder** breaks your prompts into structured, modular building blocks, giving you surgical control over your generations without prompt chaos. It trades a little bit of flexibility to have a reliable structure.
 
 - **8 modular blocks:** Cleanly separate your prompts into `Prefix`, `Character`, `Clothing`, `Expression`, `Situation`, `Location`, `Lighting`, and `Suffix`.
 - **Flexible outputs:** Outputs the combined `final_prompt` alongside individual outputs for every single block, letting you route specific parts anywhere in your canvas.
-- **Block & Scene presets:** Save individual block fragments (like your signature character or lighting style) or save full **Scene Presets** to swap entire prompt setups instantly.
+- **Block & Scene presets:** Save individual block fragments (like your signature character or lighting style) or save full **Scene Presets** to swap entire prompt setups instantly. This allows you to switch between different known good prompts without having to manually change the settings for each one.
 - **Simple web interface:** Assemble prompts in a web UI with live previews, clipboard copying, and instant synchronization with the canvas node.
 - **Wide variety of separators:** Join your prompt blocks with commas, custom tokens, or line breaks (`\n`).
 
@@ -79,21 +86,27 @@ Managing dozens or hundreds of LoRA models in ComfyUI is chaotic. Finding trigge
 
 The **Easy LoRA Manager & Config Loader** is a visual LoRA management dashboard and node system integrated right into ComfyUI.
 
-- **Automated Civitai Metadata Sync**: Fetches model titles, cover images/videos, creator usernames, HTML descriptions, tags, and trigger words directly from Civitai (supporting both SFW `civitai.com` and NSFW `civitai.red` domain modes), caching all preview media locally into `civitai_cache/`.
-- **Card Gallery with Video Hover Playback**: Displays your local LoRAs in a responsive grid with video hover preview playback and fast filtering by Base Model Architecture (`Illustrious`, `Pony`, `SD 1.5`, `SDXL 1.0`), Author, and Tags.
+- **Automated Civitai Metadata Sync**: Fetches model titles, cover images/videos, creator usernames, HTML descriptions, tags, and trigger words directly from Civitai (supporting both `civitai.com` and `civitai.red` domains, BYOK style: you'll have to use your own api key), caching all preview media locally (in the `civitai_cache/` folder, please don't delete it or you'll lose all the previews and will have to resync them).
+- **Stylized LoRA gallery**: Displays your local LoRAs in a responsive grid with filtering by Base Model Architecture, Author, and Tags.
 - **Collapsible Search Filters**: Keep your gallery clean with a collapsible search filter panel featuring real-time active filter badges and state persistence.
-- **Multiple Presets per LoRA**: Save multiple weight and prompt presets per LoRA card for instant switching.
-- **Direct Civitai Links & Single-Card Resync**: One-click **"🌐 See on CivitAI"** direct model page redirection and single-card metadata resync buttons.
-- **Instant Canvas Node Synchronization**: Click **"🚀 Send to ComfyUI"** inside the `Prompt Builder Config` tab to push your selected LoRA model, default weights (`strength_model`, `strength_clip`), and prompt builder blocks (`character`, `clothing`, `no_clothing`, `expression`, `situation`, `location`, `lighting`) directly to the **💊 Easy LoRA Config Loader** node on your active workflow canvas.
+- **Specialized LoRA Nodes**: Tailored output signatures and category-filtered dropdown menus based on LoRA domain:
+  - `💊 Easy LoRA Character Loader` (Character LoRAs only; outputs: Character, Clothing, No Clothing, Expression)
+  - `💊 Easy LoRA Clothing Loader` (Clothing LoRAs only; outputs: Clothing, No Clothing)
+  - `💊 Easy LoRA Pose & Action Loader` (Pose & Action LoRAs only; outputs: Expression, Situation)
+  - `💊 Easy LoRA Background Loader` (Background & Building LoRAs only; outputs: Location, Lighting, Situation)
+  - `💊 Easy LoRA Basic Loader` (Style, Concept, Tool, Assets, Vehicle, Objects, Animal, Base Model; 4 generic prompt outputs)
+- **Canvas Real-Time Auto-Population**: Selecting a `lora_name` directly from the dropdown menu of a canvas node populates its strength weights and prompt fields automatically.
+- **Dynamic Config Tab**: Modals in Web UI automatically display only relevant prompt input fields based on the LoRA's main Civitai category tag.
+- **Strict Targeted Canvas Synchronization**: Selected LoRA model, default weights, and prompt block outputs strictly to the matching specialized loader node on your active canvas (if any is present).
 
 #### 🚀 How to Use It
 
-- Drop the **💊 Easy LoRA Config Loader** node (`🗄️ Comfy Cabinet` category) onto your canvas.
-- Click the **"Easy Config"** button in your ComfyUI top menu and choose **"Easy LoRA Config"**.
-- Browse your gallery, search, or filter by Base Model architecture, Author, or Tag.
-- Open a LoRA card to inspect Civitai preview images/videos, description, versions, and trigger words.
-- In the **Prompt Builder Config** tab, fine-tune default weights and prompt blocks (or click **"🪄 Auto-fill Trigger Words"**).
-- Click **"🚀 Send to ComfyUI"** to instantly update the active node on your canvas.
+- Drop any of the specialized **💊 Easy LoRA Loader** nodes (`🗄️ Comfy Cabinet` category) onto your canvas.
+- Click the **"Easy Config"** button in your ComfyUI top menu and choose **"💊 Easy LoRA Config"**.
+- Browse your gallery, search, or filter by Type (Civitai main tag), Base Model, Author, or Tag.
+- Open a LoRA card to inspect Civitai preview media, descriptions, and trigger words.
+- In the **Config** tab, fine-tune weights and prompt blocks.
+- Click **"💾 Save config"** and then **"🚀 Send to ComfyUI"** to push to the matching node on your canvas, or simply select a model directly from the node's dropdown menu on the canvas to auto-populate fields.
 
 ---
 

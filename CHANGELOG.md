@@ -2,6 +2,26 @@
 
 All notable changes to **Comfy Cabinet** are documented in this file.
 
+## [0.2.1] — 2026-08-11 *(Full Release Candidate)*
+
+### Added
+- **Specialized LoRA Custom Nodes**: Expanded LoRA node suite into 5 specialized loader classes registered under `🗄️ Comfy Cabinet`:
+  - `💊 Easy LoRA Character Loader` (Outputs: `MODEL`, `CLIP`, `character`, `clothing`, `no_clothing`, `expression`)
+  - `💊 Easy LoRA Clothing Loader` (Outputs: `MODEL`, `CLIP`, `clothing`, `no_clothing`)
+  - `💊 Easy LoRA Pose & Action Loader` (Outputs: `MODEL`, `CLIP`, `expression`, `situation`)
+  - `💊 Easy LoRA Background Loader` (Outputs: `MODEL`, `CLIP`, `location`, `lighting`, `situation`)
+  - `💊 Easy LoRA Basic Loader` (Outputs: `MODEL`, `CLIP`, `prompt_1`, `prompt_2`, `prompt_3`, `prompt_4`)
+- **Dynamic Web UI Config Tab**: Config tab fields inside the LoRA detail modal dynamically adapt based on the LoRA's main Civitai category tag (`Character`, `Clothing`, `Poses`, `Action`, `Background`, `Buildings`, or Basic).
+- **Category-Filtered LoRA Dropdown Menus**: Canvas custom nodes now filter their `lora_name` dropdown widget to display only LoRA models matching their type.
+- **Canvas Real-Time Auto-Population**: Selecting a `lora_name` directly from the dropdown menu of an `EasyLora*` custom node on the workflow canvas automatically populates strength weights (`strength_model`, `strength_clip`) and prompt block fields with saved configuration settings.
+
+### Fixed
+- **Strict Canvas Node Targeting**: The "Send to ComfyUI" button in the Web UI dashboard now strictly targets ONLY custom nodes on the canvas matching the LoRA type (`Character` $\rightarrow$ `EasyLoraCharacterConfigLoader`, `Clothing` $\rightarrow$ `EasyLoraClothingConfigLoader`, etc.) without broadcasting updates to unrelated nodes.
+- **Unrelated Node Updates**: Prevented canvas updates for unrelated nodes (e.g., checkpoints) when opening LoRA modals in the Web UI.
+
+### Removed
+- Legacy all-in-one `EasyLoraConfigLoader` node class in favor of the specialized node suite.
+
 ---
 
 ## [0.2.0] — 2026-08-09 *(Full Release Candidate)*
