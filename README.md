@@ -2,7 +2,7 @@
 
 Welcome to the **Comfy Cabinet**, a boutique virtual exhibit of handcrafted ComfyUI custom nodes. No fluff, just a clean, offline-first space where your nodes sit comfortably on velvet shelves, waiting to save your workflow from the depths of chaos.
 
-Current Exhibition: 🎨 **Easy Checkpoint Config Loader**, 🧩 **Easy Prompt Builder**, & 💊 **Easy LoRA Config Loader**
+Current Exhibition: 🎨 **Easy Checkpoint Config Loader**, 🧩 **Easy Prompt Builder**, 💊 **Easy LoRA Config Loader**, 🖼️ **Easy Multi-Image Loader**
 
 **ATTENTION**: v0.2.1 is out for testing in the real world as it's a Release Candidate. I've fully reworked the Web UI and introduced many new functionalities. Please read the [Changelog](CHANGELOG.md) for more information.
 
@@ -110,6 +110,38 @@ The **Easy LoRA Manager & Config Loader** is a visual LoRA management dashboard 
 
 ---
 
+## 🖼️ Easy Multi-Image Loader
+
+### 🧐 The Problem
+
+Loading a sequence or collection of images in ComfyUI usually requires multiple separate loader nodes, clumsy manual re-selection for each image, or external scripts. Reviewing loaded images directly on the canvas without massive preview bloat or opening external file viewers is frustrating.
+
+---
+
+### 💡 The Solution
+
+The **Easy Multi-Image Loader** is an all-in-one canvas image loader and gallery node built natively for ComfyUI.
+
+- **Multi-Source Image Ingestion**: Upload multiple image files at once directly via file picker, drag & drop images onto the canvas widget, or scan any subfolder in your ComfyUI `input` directory.
+- **Interactive Canvas Thumbnail Gallery**: Browse crisp thumbnail cards embedded directly inside the node with index badges, deletion buttons, and active selection highlights.
+- **Full-Screen Lightbox Modal**: Click any thumbnail to view full-resolution previews in a sleek glassmorphic lightbox with keyboard navigation (`←`/`→`/`Esc`), image metadata, and instant output selection.
+- **Flexible Output Modes**:
+  - `Fixed / Selected Index`: Outputs the manually selected image.
+  - `Cycle (Increment)`: Advances sequentially through loaded images with automatic wrap-around back to the first image.
+  - `Cycle (Decrement)`: Steps backwards through loaded images with wrap-around back to the last image.
+  - `Random`: Selects a random image on each execution.
+- **Real-Time Progress Feedback**: Dynamic progress bar (`Image X / Y (Z%)`) and thumbnail glowing ring that updates during batch/queue generation.
+- **Batch Output Support**: Configure `batch_size` to output multiple consecutive images together in a single tensor batch.
+
+#### 🚀 How to Use It
+
+- Add the **🖼️ Easy Multi-Image Loader** node (`🗄️ Comfy Cabinet` category) to your canvas.
+- Click **"📁 Upload"** to pick multiple images or drag & drop them directly onto the node gallery (or click **"📂 Input Dir"**).
+- Click any thumbnail in the gallery to inspect it in the full-screen Lightbox and select it as the active image.
+- Choose your desired **Mode** (`Fixed / Selected Index`, `Cycle (Increment)`, etc.) and connect the `IMAGE` / `MASK` outputs to your workflow.
+
+---
+
 ## 🛠️ Installation
 
 Simply clone this repository into your ComfyUI custom nodes folder:
@@ -122,5 +154,5 @@ git clone https://github.com/Zed93/Comfy-Cabinet.git
 
 ## 🧐 Tested with
 
-- ComfyUI 0.30.1
+- ComfyUI 0.34.0
 - ltdrdata/ComfyUI-Impact-Pack Facedetailer custom node

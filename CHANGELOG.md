@@ -2,6 +2,29 @@
 
 All notable changes to **Comfy Cabinet** are documented in this file.
 
+## [0.2.2] — 2026-08-27
+
+### Added
+- **🖼️ Easy Multi-Image Loader Custom Node**:
+  - Load multiple images into ComfyUI with multi-file upload, drag-and-drop, and automatic input folder / subfolder scanning.
+  - **Output Modes**:
+    - `Fixed / Selected Index`: Outputs the selected image from the gallery.
+    - `Cycle (Increment)`: Advances through images sequentially across generations with seamless wrap-around back to the first image.
+    - `Cycle (Decrement)`: Cycles backwards through images with wrap-around back to the last image.
+    - `Random`: Selects a random image on each generation execution.
+  - **Interactive Canvas Thumbnail Gallery**:
+    - Displays crisp thumbnail cards on the ComfyUI workflow canvas with index badges (`#1`, `#2`), active selection glow rings, and deletion buttons.
+    - Click thumbnail to select as active output and trigger the Lightbox.
+  - **Full-Screen Lightbox Modal**:
+    - High-resolution image preview with dark glassmorphism backdrop blur.
+    - Keyboard navigation (Left / Right arrow keys, Escape key), position indicator, file metadata, and one-click "Select Output" button.
+  - **Live Execution Progress Indicator**:
+    - Real-time progress bar showing active position (`Image X / Y (Z%)`) synchronized across queue generations.
+  - **Outputs**: `IMAGE` (`IMAGE` tensor), `MASK` (`MASK` tensor), `filename` (`STRING`), `current_index` (`INT`), `total_images` (`INT`), `progress_percent` (`FLOAT`).
+  - **Batch Support**: Configure `batch_size` to output multiple consecutive images at once in a single tensor batch.
+
+---
+
 ## [0.2.1] — 2026-08-11 *(Full Release Candidate)*
 
 ### Added
