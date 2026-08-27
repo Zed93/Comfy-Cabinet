@@ -4,13 +4,52 @@ import { app } from "../../scripts/app.js";
 const comfyApp = window.comfyAPI?.app?.app || app;
 const comfyApi = window.comfyAPI?.api?.api || api;
 
+// Helper to parse image item (string or object) and resolve filename, subfolder, and view url
+function parseImageItem(item, defaultSubfolder = "") {
+    if (!item) return { filename: "", subfolder: "", relativePath: "", url: "" };
+
+    let filename = "";
+    let subfolder = defaultSubfolder || "";
+    let relativePath = "";
+
+    if (typeof item === "string") {
+        const clean = item.replace(/\\/g, "/").trim();
+        relativePath = clean;
+        const lastSlash = clean.lastIndexOf("/");
+        if (lastSlash !== -1) {
+            const itemSub = clean.substring(0, lastSlash);
+            filename = clean.substring(lastSlash + 1);
+            subfolder = defaultSubfolder ? `${defaultSubfolder.replace(/\/$/, "")}/${itemSub.replace(/^\//, "")}` : itemSub;
+        } else {
+            filename = clean;
+            subfolder = defaultSubfolder || "";
+        }
+    } else if (typeof item === "object") {
+        filename = item.filename || "";
+        subfolder = item.subfolder !== undefined ? item.subfolder : (defaultSubfolder || "");
+        relativePath = item.relative_path || (subfolder ? `${subfolder}/${filename}` : filename);
+
+        if (filename.includes("/") || filename.includes("\\")) {
+            const clean = filename.replace(/\\/g, "/");
+            const lastSlash = clean.lastIndexOf("/");
+            const itemSub = clean.substring(0, lastSlash);
+            filename = clean.substring(lastSlash + 1);
+            subfolder = subfolder ? `${subfolder.replace(/\/$/, "")}/${itemSub.replace(/^\//, "")}` : itemSub;
+        }
+    }
+
+    const url = `/view?filename=${encodeURIComponent(filename)}&type=input&subfolder=${encodeURIComponent(subfolder || "")}`;
+    return { filename, subfolder, relativePath, url };
+}
+
 // Global lightbox instance to avoid duplicates
 let lightboxOverlay = null;
 let lightboxState = {
     images: [],
     currentIndex: 0,
     subfolder: "",
-    onSelectIndex: null
+    onSelectIndex: null,
+    onClose: null
 };
 
 function ensureLightbox() {
@@ -82,6 +121,15 @@ function ensureLightbox() {
     const closeLightbox = () => {
         overlay.style.display = "none";
         document.removeEventListener("keydown", handleKeyDown);
+        if (typeof lightboxState.onClose === "function") {
+            try {
+                lightboxState.onClose(lightboxState.currentIndex + 1);
+            } catch (err) {
+                console.error("[EasyMultiImageLoader] Error in lightbox onClose:", err);
+            }
+        }
+        lightboxState.onClose = null;
+        lightboxState.onSelectIndex = null;
     };
 
     const updateLightboxView = () => {
@@ -95,19 +143,15 @@ function ensureLightbox() {
         lightboxState.currentIndex = idx;
         const item = lightboxState.images[idx];
 
-        let relPath = typeof item === "string" ? item : (item.relative_path || item.filename);
-        let filename = typeof item === "string" ? item.split("/").pop() : item.filename;
-        let subfolder = (typeof item === "object" && item.subfolder) ? item.subfolder : lightboxState.subfolder;
-
-        const imgUrl = `/view?filename=${encodeURIComponent(filename)}&type=input&subfolder=${encodeURIComponent(subfolder || "")}`;
+        const { filename, relativePath, url } = parseImageItem(item, lightboxState.subfolder);
 
         const lbImg = overlay.querySelector("#lb-img");
-        lbImg.src = imgUrl;
+        lbImg.src = url;
 
         overlay.querySelector("#lb-badge").textContent = `${idx + 1} / ${total}`;
         const fnEl = overlay.querySelector("#lb-filename");
         fnEl.textContent = filename;
-        fnEl.title = relPath;
+        fnEl.title = relativePath;
 
         // Strip thumbnails highlight
         const strip = overlay.querySelector("#lb-thumbs-strip");
@@ -127,13 +171,12 @@ function ensureLightbox() {
         const strip = overlay.querySelector("#lb-thumbs-strip");
         strip.innerHTML = "";
         lightboxState.images.forEach((item, idx) => {
-            let filename = typeof item === "string" ? item.split("/").pop() : item.filename;
-            let subfolder = (typeof item === "object" && item.subfolder) ? item.subfolder : lightboxState.subfolder;
-            const imgUrl = `/view?filename=${encodeURIComponent(filename)}&type=input&subfolder=${encodeURIComponent(subfolder || "")}`;
+            const { filename, url } = parseImageItem(item, lightboxState.subfolder);
 
             const thumb = document.createElement("img");
             thumb.className = "lb-strip-thumb";
-            thumb.src = imgUrl;
+            thumb.src = url;
+            thumb.alt = filename;
             thumb.style.width = "52px";
             thumb.style.height = "52px";
             thumb.style.objectFit = "cover";
@@ -190,11 +233,12 @@ function ensureLightbox() {
         closeLightbox();
     });
 
-    overlay._open = (images, index, subfolder, onSelect) => {
+    overlay._open = (images, index, subfolder, onSelect, onClose) => {
         lightboxState.images = images || [];
         lightboxState.currentIndex = Math.max(0, index - 1);
         lightboxState.subfolder = subfolder || "";
         lightboxState.onSelectIndex = onSelect;
+        lightboxState.onClose = onClose;
 
         populateStrip();
         updateLightboxView();
@@ -206,9 +250,9 @@ function ensureLightbox() {
     return overlay;
 }
 
-function openLightbox(images, index, subfolder, onSelect) {
+function openLightbox(images, index, subfolder, onSelect, onClose) {
     const lb = ensureLightbox();
-    lb._open(images, index, subfolder, onSelect);
+    lb._open(images, index, subfolder, onSelect, onClose);
 }
 
 // ==================== COMFYUI EXTENSION REGISTRATION ====================
@@ -328,6 +372,24 @@ if (comfyApp) {
             const rawListWidget = getWidget("images_list");
             if (rawListWidget) {
                 rawListWidget.computeSize = () => [0, -4];
+                const origListCallback = rawListWidget.callback;
+                rawListWidget.callback = function(val) {
+                    if (origListCallback) origListCallback.apply(this, arguments);
+                    if (node._refreshGallery) {
+                        node._refreshGallery();
+                    }
+                };
+            }
+
+            const subfolderWidget = getWidget("subfolder");
+            if (subfolderWidget) {
+                const origSubfolderCb = subfolderWidget.callback;
+                subfolderWidget.callback = function(val) {
+                    if (origSubfolderCb) origSubfolderCb.apply(this, arguments);
+                    if (node._refreshGallery) {
+                        node._refreshGallery();
+                    }
+                };
             }
 
             // Container Element for DOM Widget
@@ -356,15 +418,15 @@ if (comfyApp) {
                 const listWidget = getWidget("images_list");
                 let val = listWidget ? listWidget.value : null;
 
-                // Fallback to node.widgets_values if widget not yet synced during graph configure
-                if ((!val || val === "[]") && node.widgets_values && Array.isArray(node.widgets_values)) {
+                // Fallback to node.widgets_values ONLY if listWidget.value is null/undefined/empty string during initial graph configure
+                if ((val === undefined || val === null || val === "") && node.widgets_values && Array.isArray(node.widgets_values)) {
                     const idx = node.widgets ? node.widgets.findIndex(w => w.name === "images_list") : 2;
-                    if (idx !== -1 && node.widgets_values[idx]) {
+                    if (idx !== -1 && node.widgets_values[idx] !== undefined && node.widgets_values[idx] !== null) {
                         val = node.widgets_values[idx];
                     }
                 }
 
-                if (!val) return [];
+                if (!val || val === "[]") return [];
                 if (Array.isArray(val)) return val;
                 if (typeof val === "object") return [val];
                 try {
@@ -387,12 +449,21 @@ if (comfyApp) {
 
             const setLoadedImages = (arr) => {
                 const listWidget = getWidget("images_list");
+                const serialized = JSON.stringify(arr || []);
                 if (listWidget) {
-                    listWidget.value = JSON.stringify(arr);
+                    listWidget.value = serialized;
                     if (listWidget.callback) listWidget.callback(listWidget.value);
+                }
+                // Keep node.widgets_values in sync if present
+                if (node.widgets_values && Array.isArray(node.widgets_values)) {
+                    const idx = node.widgets ? node.widgets.findIndex(w => w.name === "images_list") : -1;
+                    if (idx !== -1) {
+                        node.widgets_values[idx] = serialized;
+                    }
                 }
                 renderThumbnails();
                 updateProgressDisplay();
+                comfyApp.graph?.setDirtyCanvas(true, true);
             };
 
             // 1. Toolbar Section
@@ -403,7 +474,7 @@ if (comfyApp) {
             toolbar.style.gap = "6px";
             toolbar.style.flexWrap = "wrap";
 
-            // Left actions: Upload & Scan Input
+            // Left actions: Upload, Scan Input, & Full Gallery
             const leftActions = document.createElement("div");
             leftActions.style.display = "flex";
             leftActions.style.gap = "6px";
@@ -439,8 +510,8 @@ if (comfyApp) {
 
             scanBtn.addEventListener("click", async (e) => {
                 e.stopPropagation();
-                const subfolderWidget = getWidget("subfolder");
-                const subfolder = subfolderWidget ? subfolderWidget.value : "";
+                const subfolderW = getWidget("subfolder");
+                const subfolder = subfolderW ? subfolderW.value : "";
                 try {
                     scanBtn.textContent = "⏳ Scanning...";
                     const res = await fetch(`/easy_multi_image/get_input_files?subfolder=${encodeURIComponent(subfolder || "")}`);
@@ -455,8 +526,47 @@ if (comfyApp) {
                 }
             });
 
+            const galleryBtn = document.createElement("button");
+            galleryBtn.innerHTML = "<span>🖼️ Gallery</span>";
+            galleryBtn.title = "Open full-screen interactive gallery modal";
+            galleryBtn.style.background = "rgba(255, 255, 255, 0.1)";
+            galleryBtn.style.color = "#e5e7eb";
+            galleryBtn.style.border = "1px solid rgba(255,255,255,0.15)";
+            galleryBtn.style.borderRadius = "5px";
+            galleryBtn.style.padding = "5px 10px";
+            galleryBtn.style.fontSize = "12px";
+            galleryBtn.style.cursor = "pointer";
+
+            galleryBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const imgs = getLoadedImages();
+                if (!imgs || imgs.length === 0) {
+                    alert("No images loaded in the list. Please upload images or scan input directory first.");
+                    return;
+                }
+                const indexW = getWidget("index");
+                const currentIndex = indexW ? Number(indexW.value || 1) : 1;
+                const subfolderW = getWidget("subfolder");
+                const defaultSubfolder = subfolderW ? subfolderW.value : "";
+                openLightbox(imgs, currentIndex, defaultSubfolder, (chosenIdx) => {
+                    if (indexW) {
+                        indexW.value = chosenIdx;
+                        if (indexW.callback) indexW.callback(chosenIdx);
+                    }
+                    updateProgressDisplay();
+                    highlightActiveCard(chosenIdx);
+                    comfyApp.graph?.setDirtyCanvas(true, true);
+                }, (finalIdx) => {
+                    if (node._refreshGallery) {
+                        node._refreshGallery();
+                    }
+                    comfyApp.graph?.setDirtyCanvas(true, true);
+                });
+            });
+
             leftActions.appendChild(uploadBtn);
             leftActions.appendChild(scanBtn);
+            leftActions.appendChild(galleryBtn);
 
             // Right actions: Shuffle & Clear
             const rightActions = document.createElement("div");
@@ -497,6 +607,16 @@ if (comfyApp) {
 
             clearBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
+                const current = getLoadedImages();
+                if (current.length === 0) return;
+                if (!confirm("Are you sure you want to clear the node image list selection?")) {
+                    return;
+                }
+                const indexW = getWidget("index");
+                if (indexW) {
+                    indexW.value = 1;
+                    if (indexW.callback) indexW.callback(1);
+                }
                 setLoadedImages([]);
             });
 
@@ -694,9 +814,7 @@ if (comfyApp) {
                     const itemIndex = idx + 1;
                     const isSelected = itemIndex === currentIndex;
 
-                    let filename = typeof item === "string" ? item.split("/").pop() : item.filename;
-                    let subfolder = (typeof item === "object" && item.subfolder) ? item.subfolder : defaultSubfolder;
-                    const imgUrl = `/view?filename=${encodeURIComponent(filename)}&type=input&subfolder=${encodeURIComponent(subfolder || "")}`;
+                    const { filename, relativePath, url: imgUrl } = parseImageItem(item, defaultSubfolder);
 
                     const card = document.createElement("div");
                     card.className = "easy-img-thumb-card";
@@ -780,7 +898,7 @@ if (comfyApp) {
                         setLoadedImages(current);
                     });
 
-                    card.title = `${filename}\n• Click to select as output\n• Double-click to preview in Lightbox`;
+                    card.title = `${filename || relativePath}\n• Click to select as output\n• Double-click to preview in Lightbox`;
 
                     // Single Click: select image as active output
                     card.addEventListener("click", (e) => {
@@ -805,6 +923,11 @@ if (comfyApp) {
                             }
                             updateProgressDisplay();
                             highlightActiveCard(chosenIdx);
+                            comfyApp.graph?.setDirtyCanvas(true, true);
+                        }, (finalIdx) => {
+                            if (node._refreshGallery) {
+                                node._refreshGallery();
+                            }
                             comfyApp.graph?.setDirtyCanvas(true, true);
                         });
                     });
@@ -986,13 +1109,15 @@ if (comfyApp) {
             // Add DOM widget to LiteGraph node
             const galleryWidget = node.addDOMWidget("easy_multi_image_gallery_widget", "custom_gallery", container, {
                 getValue() {
-                    return getWidget("images_list")?.value || "[]";
+                    const listWidget = getWidget("images_list");
+                    return listWidget ? listWidget.value : "[]";
                 },
                 setValue(v) {
-                    if (v && typeof v === "string" && v !== "[]") {
+                    if (v !== undefined && v !== null) {
                         const listWidget = getWidget("images_list");
-                        if (listWidget && listWidget.value !== v) {
-                            listWidget.value = v;
+                        const strVal = typeof v === "string" ? v : JSON.stringify(v);
+                        if (listWidget && listWidget.value !== strVal) {
+                            listWidget.value = strVal;
                         }
                     }
                     if (node._refreshGallery) {

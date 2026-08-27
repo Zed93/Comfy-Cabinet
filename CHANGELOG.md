@@ -2,6 +2,17 @@
 
 All notable changes to **Comfy Cabinet** are documented in this file.
 
+## [0.2.3] — 2026-08-27
+
+### Fixed
+- **🖼️ Easy Multi-Image Loader Gallery Re-rendering**: Fixed an issue where closing the full-screen lightbox modal caused the node's `images_list` and thumbnail gallery to not render back or remain blank. Added an `onClose` lifecycle callback to force complete gallery refresh and canvas re-synchronization.
+- **Subfolder Image Resolution**: Added `parseImageItem` to reliably resolve relative paths and subfolders across both the full lightbox gallery and the canvas thumbnail gallery.
+- **Clear Selection Confirmation**: Added a user confirmation prompt (`confirm`) when clicking the clear button (🗑️) to prevent accidental loss of loaded image lists.
+- **Thumbnail Gallery Reset on Clear**: Fixed a bug where clearing the image list revived old images from `widgets_values` during re-render, ensuring the thumbnail gallery is cleanly emptied and displays the drop-zone placeholder.
+
+### Added
+- **Full Gallery Toolbar Button**: Added a dedicated `🖼️ Gallery` button to the node toolbar to directly open the full-screen interactive gallery modal.
+
 ## [0.2.2] — 2026-08-27
 
 ### Added
